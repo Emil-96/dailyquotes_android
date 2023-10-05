@@ -51,8 +51,37 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Greeting()
+                    pageNavController = rememberNavController()
+                    currentPage = currentRoute(navController = pageNavController!!)
+                    val orientation = LocalConfiguration.current.orientation
+
+                    NavHost(navController = pageNavController!!, startDestination = "home"){
+                        composable(
+                            route = "home",
+                            enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
+                            exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
+                            content = { HomePage() }
+                        )
+                        composable(
+                            route = "settings",
+                            enterTransition = { navEnterTransition(
+                                direction = if(initialState.destination.route == "home") DIRECTION_RIGHT else DIRECTION_LEFT,
+                                orientation = orientation) },
+                            exitTransition = { navExitTransition(
+                                direction = if(initialState.destination.route == "home") DIRECTION_RIGHT else DIRECTION_LEFT,
+                                orientation = orientation) },
+                            content = { SettingsPage() }
+                        )
+                    }
                 }
+            }
+        }
+    }
+
+    fun navigateTo(route: String){
+        pageNavController?.let{ controller ->
+            if(currentPage != route){
+                controller.navigate(route)
             }
         }
     }
