@@ -87,16 +87,61 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Greeting(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ){
-        Text(
-            text = "This is the base Daily Quotes app.\nWe'll start from here.",
-            modifier = modifier,
-            textAlign = TextAlign.Center
-        )
+fun HomePage(modifier: Modifier = Modifier){
+
+    val navController = rememberNavController()
+    val currentRoute = currentRoute(navController = navController)
+    val orientation = LocalConfiguration.current.orientation
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+
+            val navigationItems = listOf(BottomNavigationItem.HomeScreenItem, BottomNavigationItem.ProfileScreenItem)
+
+            NavigationBar {
+                navigationItems.forEachIndexed{ index, item ->
+                    NavigationBarItem(
+                        selected = currentRoute == item.route,
+                        onClick = {
+                            if(currentRoute != item.route){
+                                navController.navigate(item.route){
+                                    launchSingleTop = true
+                                    popUpTo("home")
+                                }
+                        }},
+                        icon = { Icon(painterResource(id = item.icon), item.label) },
+                        label = { Text(text = item.label) }
+                    )
+                }
+            }
+        }
+    ){ paddingValues ->
+        NavHost(
+            navController = navController,
+            modifier = Modifier.padding(paddingValues),
+            startDestination = "home"
+        ){
+            composable(
+                route = "home",
+                enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
+                exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
+                content = { HomeScreen() }
+            )
+            composable(
+                route = "profile",
+                enterTransition = { navEnterTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
+                exitTransition = { navExitTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
+                content = { ProfilePage() }
+            )
+        }
     }
+}
+
+@Composable
+fun currentRoute(navController: NavController): String? {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    return navBackStackEntry?.destination?.route
 }
