@@ -28,10 +28,22 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 
+private val DIRECTION_LEFT = -1
+private val DIRECTION_RIGHT = 1
+
+var mainActivity: MainActivity? = null
+
 class MainActivity : ComponentActivity() {
+
+    private var pageNavController: NavHostController? = null
+    private var currentPage: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        mainActivity = this
+
         setContent {
             DailyQuotesTheme {
                 // A surface container using the 'background' color from the theme
