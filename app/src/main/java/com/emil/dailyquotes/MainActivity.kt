@@ -3,7 +3,6 @@ package com.emil.dailyquotes
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,6 +20,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -46,7 +46,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DailyQuotesTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -65,16 +64,46 @@ class MainActivity : ComponentActivity() {
                         composable(
                             route = "settings",
                             enterTransition = { navEnterTransition(
-                                direction = if(initialState.destination.route == "home") DIRECTION_RIGHT else DIRECTION_LEFT,
+                                direction = getNavEnterDirection(initialState.destination),
                                 orientation = orientation) },
                             exitTransition = { navExitTransition(
-                                direction = if(initialState.destination.route == "home") DIRECTION_RIGHT else DIRECTION_LEFT,
+                                direction = getNavExitDirection(initialState.destination),
                                 orientation = orientation) },
                             content = { SettingsPage() }
+                        )
+                        composable(
+                            route = "login",
+                            enterTransition = { navEnterTransition(
+                                direction = getNavEnterDirection(initialState.destination),
+                                orientation = orientation) },
+                            exitTransition = { navExitTransition(
+                                direction = getNavExitDirection(initialState.destination),
+                                orientation = orientation) },
+                            content = { LoginPage() }
                         )
                     }
                 }
             }
+        }
+    }
+
+    private fun getNavEnterDirection(initialDestination: NavDestination): Int{
+
+        return if(pageNavController?.previousBackStackEntry?.destination?.route == initialDestination.route){
+            DIRECTION_RIGHT
+        }else{
+            DIRECTION_LEFT
+        }
+    }
+
+    private fun getNavExitDirection(initialDestination: NavDestination): Int{
+
+        val currentBackStack = pageNavController?.currentBackStack?.value
+
+        return if(currentBackStack?.get(currentBackStack.size - 2)?.destination?.route == initialDestination.route){
+            DIRECTION_LEFT
+        }else{
+            DIRECTION_RIGHT
         }
     }
 
@@ -84,6 +113,10 @@ class MainActivity : ComponentActivity() {
                 controller.navigate(route)
             }
         }
+    }
+
+    fun back(){
+        pageNavController?.popBackStack()
     }
 }
 
