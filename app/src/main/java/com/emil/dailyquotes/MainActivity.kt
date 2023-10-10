@@ -32,6 +32,7 @@ private val DIRECTION_LEFT = -1
 private val DIRECTION_RIGHT = 1
 
 var mainActivity: MainActivity? = null
+var firebaseManager: FirebaseManager? = null
 
 class MainActivity : ComponentActivity() {
 
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         mainActivity = this
+        firebaseManager = FirebaseManager()
 
         setContent {
             DailyQuotesTheme {
