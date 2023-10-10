@@ -9,15 +9,27 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import java.util.Date
 
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier){
 
-    val name = "Emil"
+    val name = firebaseManager?.getName()?.observeAsState()
+
+    val currentHours = Date().hours
+
+    val greeting = if(currentHours <= 11) {
+        "Good morning ${name?.value}"
+    }else if(currentHours >= 16) {
+        "Good evening ${name?.value}"
+    }else{
+        "Hello ${name?.value}"
+    }
 
     Column(
         modifier = modifier
@@ -26,7 +38,7 @@ fun HomeScreen(modifier: Modifier = Modifier){
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ){
         Text(
-            text = "Hello $name",
+            text = greeting,
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(horizontal = 8.dp)
         )
