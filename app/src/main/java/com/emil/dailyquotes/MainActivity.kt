@@ -81,6 +81,16 @@ class MainActivity : ComponentActivity() {
                                 orientation = orientation) },
                             content = { LoginPage() }
                         )
+                        composable(
+                            route = "account",
+                            enterTransition = { navEnterTransition(
+                                direction = getNavEnterDirection(initialState.destination),
+                                orientation = orientation) },
+                            exitTransition = { navExitTransition(
+                                direction = getNavExitDirection(initialState.destination),
+                                orientation = orientation) },
+                            content = { AccountPage() }
+                        )
                     }
                 }
             }
