@@ -34,8 +34,8 @@ fun HomeScreen(modifier: Modifier = Modifier){
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(32.dp)
     ){
         Text(
             text = greeting,
@@ -47,8 +47,8 @@ fun HomeScreen(modifier: Modifier = Modifier){
         ) {
             Column(
                 modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = "Your quote for the day:",
