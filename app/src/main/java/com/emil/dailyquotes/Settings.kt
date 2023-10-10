@@ -79,23 +79,25 @@ fun SettingsPage(modifier: Modifier = Modifier){
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
         ) {
-            Setting(
-                title = "Log in",
-                description = "Log in to synchronise your content",
-                hasSwitch = false,
-                onCheckedChange = {
-                    mainActivity?.navigateTo("login")
-                    /*dialogOptions = DialogOptions(
-                        title = "Log in",
-                        content = { LoginView() },
-                        dialogConfirm = {
-                            it?.let { value ->
-                            }
-                        }
-                    )
-                    dialogVisibility = DIALOG_CONTENT*/
-                }
-            )
+            if(firebaseManager?.getCurrentUser() == null) {
+                Setting(
+                    title = "Account",
+                    description = "Log in to synchronise your content",
+                    hasSwitch = false,
+                    onCheckedChange = {
+                        mainActivity?.navigateTo("login")
+                    }
+                )
+            }else{
+                Setting(
+                    title = "Account",
+                    description = "Manage your account",
+                    hasSwitch = false,
+                    onCheckedChange = {
+                        mainActivity?.navigateTo("account")
+                    }
+                )
+            }
         }
 
     }
