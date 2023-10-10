@@ -20,11 +20,15 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ProfilePage(modifier: Modifier = Modifier){
     Box(
-        modifier = modifier.fillMaxSize().padding(16.dp)
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
         Column {
             Box(
-                modifier = Modifier.fillMaxWidth().align(Alignment.End),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.End),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 IconButton(
