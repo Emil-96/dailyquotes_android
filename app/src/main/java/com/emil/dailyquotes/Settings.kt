@@ -61,20 +61,11 @@ fun SettingsPage(modifier: Modifier = Modifier){
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(text = "Settings") },
-                navigationIcon = {
-                    IconButton(onClick = { mainActivity?.back() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_back),
-                            contentDescription = "back"
-                        )
-                    }
-                })
+            TopNavBar(title = "Settings")
         }
     ) { paddingValues ->
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
@@ -95,6 +86,16 @@ fun SettingsPage(modifier: Modifier = Modifier){
                     hasSwitch = false,
                     onCheckedChange = {
                         mainActivity?.navigateTo("account")
+                    }
+                )
+            }
+            if(firebaseManager?.isAdmin() == true){
+                Setting(
+                    title = "Manage Data",
+                    description = "Add and remove entries in the database",
+                    hasSwitch = false,
+                    onCheckedChange = {
+                        mainActivity?.navigateTo("db_manager")
                     }
                 )
             }
