@@ -1,5 +1,9 @@
 package com.emil.dailyquotes
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +23,12 @@ import java.util.Date
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier){
 
+    preferenceManager?.loadDailyQuote()
+
+    val quote = preferenceManager?.quote?.observeAsState()
     val name = firebaseManager?.getName()?.observeAsState()
+
+    val transitionDurationMillis = 500
 
     val currentHours = Date().hours
 
@@ -43,11 +52,16 @@ fun HomeScreen(modifier: Modifier = Modifier){
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         ElevatedCard(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(
+                    animationSpec = tween(transitionDurationMillis)
+                ),
         ) {
             Column(
                 modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 24.dp),
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
+                    //.animateContentSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
@@ -55,11 +69,16 @@ fun HomeScreen(modifier: Modifier = Modifier){
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.alpha(.5f)
                 )
-                Text(
-                    text = "This is an example of a motivational quote.",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontStyle = FontStyle.Italic
-                )
+                AnimatedVisibility(
+                    visible = quote?.value != null,
+                    enter = fadeIn(animationSpec = tween(transitionDurationMillis), initialAlpha = 0f)
+                ) {
+                    Text(
+                        text = "" + quote?.value?.quote,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontStyle = FontStyle.Italic,
+                    )
+                }
             }
         }
     }
