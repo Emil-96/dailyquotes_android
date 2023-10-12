@@ -77,6 +77,7 @@ private val DIRECTION_RIGHT = 1
 
 var mainActivity: MainActivity? = null
 var firebaseManager: FirebaseManager? = null
+var preferenceManager: PreferenceManager? = null
 
 var csvImportLauncher: ActivityResultLauncher<Intent>? = null
 
@@ -102,6 +103,7 @@ class MainActivity : ComponentActivity() {
 
         mainActivity = this
         firebaseManager = FirebaseManager(this)
+        preferenceManager = PreferenceManager()
 
         registerCsvLauncher()
 
