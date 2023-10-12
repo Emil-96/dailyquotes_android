@@ -123,4 +123,8 @@ class FirebaseManager(private val context: Context){
         Log.d("FirebaseManager", message)
     }
 
+    fun uploadCsvElements(elements: List<CsvElement>, onSuccess: () -> Unit){
+
+    }
+
 }
