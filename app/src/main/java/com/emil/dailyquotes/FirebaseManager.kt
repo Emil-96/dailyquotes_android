@@ -12,6 +12,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 private val NAME_KEY = "firebase_display_name"
 
@@ -123,7 +124,7 @@ class FirebaseManager(private val context: Context){
         Log.d("FirebaseManager", message)
     }
 
-    fun uploadCsvElements(elements: List<CsvElement>, onSuccess: () -> Unit){
+    fun uploadCsvElements(elements: List<Quote>, onSuccess: () -> Unit){
         if(!isAdmin){
             onSuccess()
             return
@@ -142,7 +143,7 @@ class FirebaseManager(private val context: Context){
 
     }
 
-    private fun formatCsvElementsToBatches(elements: List<CsvElement>, batchSize: Int = 500): ArrayList<List<Map<String, String>>>{
+    private fun formatCsvElementsToBatches(elements: List<Quote>, batchSize: Int = 500): ArrayList<List<Map<String, String>>>{
 
         val fullMapList: ArrayList<Map<String, String>> = arrayListOf()
 
@@ -165,7 +166,7 @@ class FirebaseManager(private val context: Context){
 
     }
 
-    private fun getMapFromCsvElement(element: CsvElement): HashMap<String, String> {
+    private fun getMapFromCsvElement(element: Quote): HashMap<String, String> {
 
         val map = hashMapOf(
             "category" to element.category,
@@ -176,6 +177,16 @@ class FirebaseManager(private val context: Context){
 
         return map
 
+    }
+
+    fun getRandomQuote(getQuote: (Quote) -> Unit){
+        db.collection("quotes").get().addOnSuccessListener {  snapshot ->
+            //Log.d("Firestore", "Quotes:\n${snapshot.toString()}")
+            val randomIndex = Random.nextInt(snapshot.documents.size)
+            parseQuote(snapshot.documents[randomIndex])?.let{ randomQuote ->
+                getQuote(randomQuote)
+            }
+        }
     }
 
 }
