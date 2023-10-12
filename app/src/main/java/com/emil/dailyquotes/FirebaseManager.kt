@@ -127,4 +127,40 @@ class FirebaseManager(private val context: Context){
 
     }
 
+    private fun formatCsvElementsToBatches(elements: List<CsvElement>, batchSize: Int = 500): ArrayList<List<Map<String, String>>>{
+
+        val fullMapList: ArrayList<Map<String, String>> = arrayListOf()
+
+        for(element in elements){
+            fullMapList.add(getMapFromCsvElement(element))
+        }
+
+        val outputListOfLists: ArrayList<List<Map<String, String>>> = arrayListOf()
+
+       var currentSteppedIndex = 0
+
+       while(currentSteppedIndex < fullMapList.size){
+           val endIndex = (currentSteppedIndex + batchSize).coerceAtMost(fullMapList.size)
+           val subList = fullMapList.subList(currentSteppedIndex, endIndex)
+           outputListOfLists.add(subList)
+           currentSteppedIndex = endIndex
+       }
+
+        return outputListOfLists
+
+    }
+
+    private fun getMapFromCsvElement(element: CsvElement): HashMap<String, String> {
+
+        val map = hashMapOf(
+            "category" to element.category,
+            "quote" to element.quote,
+            "image_url" to element.imageLink,
+            "quote_url" to element.quoteUrl
+        )
+
+        return map
+
+    }
+
 }
