@@ -124,6 +124,21 @@ class FirebaseManager(private val context: Context){
     }
 
     fun uploadCsvElements(elements: List<CsvElement>, onSuccess: () -> Unit){
+        if(!isAdmin){
+            onSuccess()
+            return
+        }
+
+
+        for (subList in formatCsvElementsToBatches(elements)) {
+            db.runBatch { batch ->
+                for(batchItem in subList) {
+                    batch.set(db.collection("quotes").document(), batchItem)
+                }
+            }.addOnSuccessListener {
+                onSuccess()
+            }
+        }
 
     }
 
