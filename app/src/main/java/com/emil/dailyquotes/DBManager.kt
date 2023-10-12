@@ -1,37 +1,24 @@
 package com.emil.dailyquotes
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.service.credentials.Action
 import android.util.Log
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,43 +26,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.gson.Gson
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
-val csvElementList: ArrayList<CsvElement>? = null
-
 class DBManager: ViewModel(){
 
-    private val _importedLines: MutableLiveData<List<CsvElement>> = MutableLiveData()
-    val importedLines: LiveData<List<CsvElement>> = _importedLines
+    private val _importedLines: MutableLiveData<List<Quote>> = MutableLiveData()
+    val importedLines: LiveData<List<Quote>> = _importedLines
 
     init {
         // Initialize LiveData objects with empty data or your default values
         _importedLines.value = listOf()
     }
 
-    fun addElement(element: CsvElement){
-        val currentList = _importedLines.value.orEmpty().toMutableList()
-        currentList.add(element)
-        _importedLines.postValue(currentList)
-        Log.d("CSV", "Line count: ${currentList.size} - imported: ${element.quote}")
-    }
-
-    fun addElements(elements: ArrayList<CsvElement>){
+    fun addElements(elements: ArrayList<Quote>){
         _importedLines.postValue(elements.toList())
         Log.d("CSV", "Added ${elements.size} lines")
     }
@@ -199,7 +177,7 @@ fun DBManagerPage(dbManager: DBManager){
 }
 
 @Composable
-fun CsvListItem(element: CsvElement){
+fun CsvListItem(element: Quote){
     Row (
         modifier = Modifier.height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -240,7 +218,7 @@ fun openCsv(){
 fun parseCsvUri(uri: Uri, dbManager: DBManager){
     try {
 
-        var csvList = arrayListOf<CsvElement>()
+        var csvList = arrayListOf<Quote>()
 
         val inputStream = mainActivity?.contentResolver?.openInputStream(uri)
         val bufferedReader = BufferedReader(InputStreamReader(inputStream))
@@ -248,7 +226,7 @@ fun parseCsvUri(uri: Uri, dbManager: DBManager){
         var line: String? = bufferedReader.readLine()
         while (line != null) {
             //Log.d("CSV", line)
-            val newElement = parseCsvElement(line, dbManager)
+            val newElement = parseQuoteFromCsv(line, dbManager)
             newElement?.let { csvList.add(it) }
             line = bufferedReader.readLine()
         }
@@ -260,7 +238,7 @@ fun parseCsvUri(uri: Uri, dbManager: DBManager){
     }
 }
 
-fun parseCsvElement(csvLine: String, dbManager: DBManager): CsvElement? {
+fun parseQuoteFromCsv(csvLine: String, dbManager: DBManager): Quote? {
     val parts = csvLine.split("\t")
     return if(parts.size == 5 && parts[0].isNotEmpty()){
         //Log.d("CSV", "adding ${parts[2]}")
@@ -268,7 +246,7 @@ fun parseCsvElement(csvLine: String, dbManager: DBManager): CsvElement? {
         if(quote[0] == '"' && quote[quote.lastIndex] == '"'){
             quote = quote.substring(1, quote.lastIndex - 1)
         }
-        CsvElement(
+        Quote(
             category = parts[1],
             quote = quote,
             imageLink = parts[3],
@@ -279,7 +257,24 @@ fun parseCsvElement(csvLine: String, dbManager: DBManager): CsvElement? {
     }
 }
 
-data class CsvElement(
+fun parseQuote(jsonQuote: String): Quote? {
+    return Gson().fromJson(jsonQuote, Quote::class.java)
+}
+
+fun parseQuote(documentSnapshot: DocumentSnapshot): Quote? {
+    return Quote(
+        category = documentSnapshot["category"] as String,
+        quote = documentSnapshot["quote"] as String,
+        quoteUrl = documentSnapshot["quote_url"] as String,
+        imageLink = documentSnapshot["image_url"] as String
+    )
+}
+
+fun parseQuoteToJson(quote: Quote): String{
+    return Gson().toJson(quote).toString()
+}
+
+data class Quote(
     val category: String,
     val quote: String,
     val imageLink: String,
