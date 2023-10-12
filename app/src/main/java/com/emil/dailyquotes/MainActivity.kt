@@ -1,6 +1,8 @@
 package com.emil.dailyquotes
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -8,16 +10,13 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultCaller
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.MutatePriority
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -35,9 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,8 +42,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,8 +52,6 @@ import androidx.core.view.WindowCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
@@ -68,8 +61,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileReader
+import java.io.IOException
+import java.io.InputStreamReader
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
@@ -81,6 +78,8 @@ private val DIRECTION_RIGHT = 1
 var mainActivity: MainActivity? = null
 var firebaseManager: FirebaseManager? = null
 
+var csvImportLauncher: ActivityResultLauncher<Intent>? = null
+
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class MainActivity : ComponentActivity() {
@@ -91,8 +90,10 @@ class MainActivity : ComponentActivity() {
     private var pages = mutableStateListOf("home")
     @OptIn(ExperimentalFoundationApi::class)
     private lateinit var pagerState: PagerState
-    private lateinit var composableCoroutineScope: CoroutineScope
+    private var composableCoroutineScope: CoroutineScope? = null
     private lateinit var callback: OnBackPressedCallback
+
+    private val dbManager = DBManager()
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +102,8 @@ class MainActivity : ComponentActivity() {
 
         mainActivity = this
         firebaseManager = FirebaseManager(this)
+
+        registerCsvLauncher()
 
         setContent {
 
@@ -284,7 +287,7 @@ class MainActivity : ComponentActivity() {
                 exitTransition = { navExitTransition(
                     direction = getNavExitDirection(initialState.destination),
                     orientation = orientation) },
-                content = { DBManagerPage() }
+                content = { DBManagerPage(dbManager) }
             )
         }
     }
@@ -313,7 +316,7 @@ class MainActivity : ComponentActivity() {
     fun navigateTo(route: String){
         if(USE_PAGER_EXPERIMENTAL) {
             pages.add(route)
-            composableCoroutineScope.launch {
+            composableCoroutineScope?.launch {
                 pagerState.animateScrollToPage(pages.lastIndex)
             }
         }else{
@@ -327,8 +330,19 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     fun back(){
-        composableCoroutineScope.launch {
+        composableCoroutineScope?.launch {
             pagerState.animateScrollToPage(pages.lastIndex - 1)
+        }
+    }
+
+    private fun registerCsvLauncher(){
+        csvImportLauncher = mainActivity?.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
+            if(result.resultCode == Activity.RESULT_OK){
+                val data: Intent? = result.data
+                data?.data?.let { uri ->
+                    parseCsvUri(uri, dbManager)
+                } ?: Log.e("FileImport", "Failed to retrieve URI from Intent")
+            }
         }
     }
 }
