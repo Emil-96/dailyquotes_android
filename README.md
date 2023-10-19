@@ -1,4 +1,4 @@
-# dailyquotes frontend for Android
+# DailyQuotes frontend for Android
 
 This is the Android frontend for the DailyQuotes app.
 
@@ -18,4 +18,4 @@ On Linux:
 
 	./gradlew assembleDebug
 
-The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can be installed on any device.
+The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can be installed on any Android device.
