@@ -6,6 +6,7 @@ import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Entity
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
@@ -22,16 +23,16 @@ data class Quote(
 @Dao
 interface QuoteDao{
     @Query("SELECT * FROM quote")
-    fun getAll(): List<Quote>
+    suspend fun getAll(): List<Quote>
 
     @Query("SELECT * FROM quote WHERE id = (:quoteId)")
-    fun getQuoteById(quoteId: String): Quote
+    suspend fun getQuoteById(quoteId: String): Quote
 
-    @Insert
-    fun insertAll(vararg quotes: Quote)
+    @Insert (onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(vararg quotes: Quote)
 
     @Delete
-    fun delete(quote: Quote)
+    suspend fun delete(quote: Quote)
 }
 
 @Database(entities = [Quote::class], version = 1)
