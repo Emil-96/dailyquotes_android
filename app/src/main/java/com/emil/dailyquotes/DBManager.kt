@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.emil.dailyquotes.room.Quote
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.gson.Gson
 import java.io.BufferedReader
@@ -247,9 +248,10 @@ fun parseQuoteFromCsv(csvLine: String, dbManager: DBManager): Quote? {
             quote = quote.substring(1, quote.lastIndex - 1)
         }
         Quote(
+            id = "0",
             category = parts[1],
             quote = quote,
-            imageLink = parts[3],
+            imageUrl = parts[3],
             quoteUrl = parts[4]
         )
     }else{
@@ -273,10 +275,3 @@ fun parseQuote(documentSnapshot: DocumentSnapshot): Quote? {
 fun parseQuoteToJson(quote: Quote): String{
     return Gson().toJson(quote).toString()
 }
-
-data class Quote(
-    val category: String,
-    val quote: String,
-    val imageLink: String,
-    val quoteUrl: String
-)
