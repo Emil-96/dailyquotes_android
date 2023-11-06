@@ -59,6 +59,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import com.emil.dailyquotes.room.QuoteDatabase
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -78,6 +80,7 @@ private val DIRECTION_RIGHT = 1
 var mainActivity: MainActivity? = null
 var firebaseManager: FirebaseManager? = null
 var preferenceManager: PreferenceManager? = null
+var quoteDatabase: QuoteDatabase? = null
 
 var csvImportLauncher: ActivityResultLauncher<Intent>? = null
 
@@ -104,6 +107,12 @@ class MainActivity : ComponentActivity() {
         mainActivity = this
         firebaseManager = FirebaseManager(this)
         preferenceManager = PreferenceManager()
+        quoteDatabase = Room.databaseBuilder(
+            applicationContext,
+            QuoteDatabase::class.java, "quotes-database"
+        )
+            .allowMainThreadQueries()
+            .build()
 
         registerCsvLauncher()
 
