@@ -15,8 +15,8 @@ data class Quote(
     @PrimaryKey val id: String,
     @ColumnInfo(name = "category") val category: String,
     @ColumnInfo(name = "quote") val quote: String,
-    @ColumnInfo(name = "image_url") val image_url: String,
-    @ColumnInfo(name = "quote_url") val quote_url: String,
+    @ColumnInfo(name = "image_url") val imageUrl: String,
+    @ColumnInfo(name = "quote_url") val quoteUrl: String,
 )
 
 @Dao
