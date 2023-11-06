@@ -7,8 +7,11 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.emil.dailyquotes.room.Quote
+import com.emil.dailyquotes.room.QuoteDao
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -25,15 +28,31 @@ class FirebaseManager(private val context: Context){
 
     private var isAdmin = false
 
+    private var quoteDao: QuoteDao? = quoteDatabase?.quoteDao()
+    private var localDatabaseSize: Int = 0
+
     init {
         loadUserInfo()
         log("Trying to load preferences")
         mainActivity?.lifecycleScope?.launch {
+            localDatabaseSize = quoteDao?.getAll()?.size ?: 0
             context.dataStore.data
                 .collect { preferences ->
                     _name.postValue(preferences[stringPreferencesKey(NAME_KEY)] ?: "")
                     log("Loaded name")
                 }
+        }
+    }
+
+    fun loadInfo(){
+        quoteDao = quoteDatabase?.quoteDao()
+        db.collection("info").document("quotes").get().addOnSuccessListener { document ->
+            val remoteDatabaseVersion = (document.data?.get("version") as Long).toInt()
+            if(remoteDatabaseVersion < (preferenceManager?.getLocalDatabaseVersion() ?: 1)){
+                loadAllQuotes{
+                    preferenceManager?.saveInfo(remoteDatabaseVersion)
+                }
+            }
         }
     }
 
@@ -177,12 +196,49 @@ class FirebaseManager(private val context: Context){
 
     }
 
+    private fun loadAllQuotes(onSuccess: () -> Unit = {}){
+
+        log("Loading all quotes")
+
+        val quoteDao = quoteDatabase?.quoteDao()
+
+        quoteDao?.let {
+            db.collection("quotes").get().addOnSuccessListener { snapshot ->
+                mainActivity?.lifecycleScope?.launch {
+                    for (document in snapshot.documents) {
+                        quoteDao.insertAll(parseQuote(document))
+                    }
+                    localDatabaseSize = quoteDao.getAll().size
+                    onSuccess()
+                }
+            }
+        }
+    }
+
     fun getRandomQuote(getQuote: (Quote) -> Unit){
-        db.collection("quotes").get().addOnSuccessListener {  snapshot ->
-            //Log.d("Firestore", "Quotes:\n${snapshot.toString()}")
-            val randomIndex = Random.nextInt(snapshot.documents.size)
-            parseQuote(snapshot.documents[randomIndex])?.let{ randomQuote ->
-                getQuote(randomQuote)
+
+        if(localDatabaseSize != 0){
+            getRandomQuoteFromLocalDatabase(getQuote)
+            log("retrieving random quote from local db")
+            return
+        }
+
+        loadAllQuotes(onSuccess = {
+            getRandomQuoteFromLocalDatabase(getQuote)
+            log("retrieving random quote after downloading all quotes")
+        })
+
+    }
+
+    private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit){
+        mainActivity?.lifecycleScope?.launch {
+            quoteDao?.getAll().also {
+                log("getAll() returns $it")
+                it?.let { quotes ->
+                    val randomIndex = Random.nextInt(quotes.size)
+                    getQuote(quotes[randomIndex])
+                    log("retrieved '${quotes[randomIndex].quote}'")
+                }
             }
         }
     }
