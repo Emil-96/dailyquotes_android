@@ -190,3 +190,13 @@ class FirebaseManager(private val context: Context){
     }
 
 }
+
+fun parseQuote(documentSnapshot: DocumentSnapshot): Quote {
+    return Quote(
+        id = documentSnapshot.id,
+        category = documentSnapshot["category"] as String,
+        quote = documentSnapshot["quote"] as String,
+        quoteUrl = documentSnapshot["quote_url"] as String,
+        imageUrl = documentSnapshot["image_url"] as String
+    )
+}

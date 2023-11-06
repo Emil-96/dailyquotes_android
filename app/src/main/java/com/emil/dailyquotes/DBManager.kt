@@ -263,15 +263,6 @@ fun parseQuote(jsonQuote: String): Quote? {
     return Gson().fromJson(jsonQuote, Quote::class.java)
 }
 
-fun parseQuote(documentSnapshot: DocumentSnapshot): Quote? {
-    return Quote(
-        category = documentSnapshot["category"] as String,
-        quote = documentSnapshot["quote"] as String,
-        quoteUrl = documentSnapshot["quote_url"] as String,
-        imageLink = documentSnapshot["image_url"] as String
-    )
-}
-
 fun parseQuoteToJson(quote: Quote): String{
     return Gson().toJson(quote).toString()
 }
