@@ -168,14 +168,12 @@ class FirebaseManager(private val context: Context){
 
     private fun getMapFromCsvElement(element: Quote): HashMap<String, String> {
 
-        val map = hashMapOf(
+        return hashMapOf(
             "category" to element.category,
             "quote" to element.quote,
-            "image_url" to element.imageLink,
+            "image_url" to element.imageUrl,
             "quote_url" to element.quoteUrl
         )
-
-        return map
 
     }
 
