@@ -19,3 +19,18 @@ On Linux:
 	./gradlew assembleDebug
 
 The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can be installed on any Android device.
+
+## Current State
+
+The app is currently under development and is not ready to be used.
+
+### Known issues
+
+- The profile screen always shows a "not logged in" message
+- When logging in, it loads indefinitely (leaving the screen manually works)
+- When opening the app the first time and subsequent times, loading a quote not always happens (sometimes you have to open the profile screen and go back in order for it to load properly)
+- quotes are not loaded daily but rather every time the app is closed and opened again
+
+### Things coming in the future
+
+- The possibility to save and view quotes
