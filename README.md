@@ -29,7 +29,6 @@ The app is currently under development and is not ready to be used.
 - The profile screen always shows a "not logged in" message
 - When logging in, it loads indefinitely (leaving the screen manually works)
 - When opening the app the first time and subsequent times, loading a quote not always happens (sometimes you have to open the profile screen and go back in order for it to load properly)
-- Quotes are not loaded daily but rather every time the app is closed and opened again
 
 ### Things coming in the future
 
