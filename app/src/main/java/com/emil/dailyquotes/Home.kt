@@ -75,7 +75,7 @@ fun HomeScreen(modifier: Modifier = Modifier){
                 ) {
                     Text(
                         text = "" + quote?.value?.quote,
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontStyle = FontStyle.Italic,
                     )
                 }
