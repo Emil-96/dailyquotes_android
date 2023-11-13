@@ -3,6 +3,7 @@ package com.emil.dailyquotes
 import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -21,7 +22,7 @@ class PreferenceManager{
     private var _quote: MutableLiveData<Quote> = MutableLiveData()
     val quote: LiveData<Quote> = _quote
 
-    private var quoteDatabaseVersion: Int = 0
+    private var quoteDatabaseVersion: Long = 0L
 
     init {
         loadInfo {
@@ -32,23 +33,23 @@ class PreferenceManager{
     private fun loadInfo(onFinished: () -> Unit){
         mainActivity?.lifecycleScope?.launch {
             mainActivity?.dataStore?.data?.collect{ preferences ->
-                quoteDatabaseVersion = preferences[intPreferencesKey(PREFERENCE_KEY_VERSION)] ?: 0
+                quoteDatabaseVersion = preferences[longPreferencesKey(PREFERENCE_KEY_VERSION)] ?: 0L
                 onFinished()
             }
         }
     }
 
     fun saveInfo(
-        databaseVersion: Int
+        databaseVersion: Long
     ){
         mainActivity?.lifecycleScope?.launch {
             mainActivity?.dataStore?.edit { mutablePreferences ->
-                mutablePreferences[intPreferencesKey(PREFERENCE_KEY_VERSION)] = databaseVersion
+                mutablePreferences[longPreferencesKey(PREFERENCE_KEY_VERSION)] = databaseVersion
             }
         }
     }
 
-    fun getLocalDatabaseVersion(): Int{
+    fun getLocalDatabaseVersion(): Long{
         return quoteDatabaseVersion
     }
     
