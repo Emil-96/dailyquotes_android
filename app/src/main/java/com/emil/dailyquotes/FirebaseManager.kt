@@ -47,7 +47,7 @@ class FirebaseManager(private val context: Context){
     fun loadInfo(){
         quoteDao = quoteDatabase?.quoteDao()
         db.collection("info").document("quotes").get().addOnSuccessListener { document ->
-            val remoteDatabaseVersion = (document.data?.get("version") as Long).toInt()
+            val remoteDatabaseVersion = (document.data?.get("version") as Long)
             if(remoteDatabaseVersion < (preferenceManager?.getLocalDatabaseVersion() ?: 1)){
                 loadAllQuotes{
                     preferenceManager?.saveInfo(remoteDatabaseVersion)
