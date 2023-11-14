@@ -72,6 +72,10 @@ import java.io.InputStreamReader
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
+/**
+ * This is the main entry point for the application.
+ */
+
 private val USE_PAGER_EXPERIMENTAL = false
 
 private val DIRECTION_LEFT = -1
@@ -86,6 +90,9 @@ var csvImportLauncher: ActivityResultLauncher<Intent>? = null
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
+/**
+ * Gets created when the app gets executed and handles all further action.
+ */
 class MainActivity : ComponentActivity() {
 
     private lateinit var pageNavController: NavHostController
@@ -99,6 +106,10 @@ class MainActivity : ComponentActivity() {
 
     private val dbManager = DBManager()
 
+    /**
+     * Gets called when the UI gets created.
+     * It is the entry point for all UI action.
+     */
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -137,6 +148,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Returns a [HorizontalPager] element which contains multiple [pages] and handles all the navigation happening within the application.
+     *
+     * In [onCreate] the constant [USE_PAGER_EXPERIMENTAL] determines if this or [NavigationHost] gets used.
+     * Using the [HorizontalPager] has led to some issues so please only use this when you are sure what you are doing.
+     */
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun NavigationPager(){
@@ -205,6 +222,10 @@ class MainActivity : ComponentActivity() {
 
         composableCoroutineScope = rememberCoroutineScope()
 
+        /**
+         * This is the [HorizontalPager] element that gets returned.
+         * It contains all the possible navigation destinations.
+         */
         HorizontalPager(
             state = pagerState,
             userScrollEnabled = false
@@ -241,6 +262,11 @@ class MainActivity : ComponentActivity() {
 
     }
 
+    /**
+     * Returns a [NavHost] element which is used with the [pageNavController] takes care of all navigation destinations and the animations when transitioning between them.
+     *
+     * In [onCreate] the constant [USE_PAGER_EXPERIMENTAL] determines if this or the [HorizontalPager] in [NavigationPager] gets used.
+     */
     @Composable
     fun NavigationHost(){
 
@@ -301,6 +327,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * The direction in which the navigation flow is going and in which direction the page should be animated when entering.
+     *
+     * Returns either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+     *
+     * It is a supporting method used in [NavigationHost] to adjust the page transition accordingly.
+     *
+     * @param initialDestination The [NavDestination] from which the transition started.
+     */
     private fun getNavEnterDirection(initialDestination: NavDestination): Int{
 
         return if(pageNavController.previousBackStackEntry?.destination?.route == initialDestination.route){
@@ -310,6 +345,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * The direction in which the navigation flow is going and in which direction the page should be animated when exiting.
+     *
+     * Returns either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+     *
+     * It is a supporting method used in [NavigationHost] to adjust the page transition accordingly.
+     *
+     * @param initialDestination The [NavDestination] from which the transition started.
+     */
     private fun getNavExitDirection(initialDestination: NavDestination): Int{
 
         val currentBackStack = pageNavController.currentBackStack.value
@@ -321,6 +365,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Public method to navigate to a desired destination.
+     *
+     * @param route The desired destination. It has to exist in [pageNavController]
+     */
     @OptIn(ExperimentalFoundationApi::class)
     fun navigateTo(route: String){
         if(USE_PAGER_EXPERIMENTAL) {
@@ -337,6 +386,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Public method to quickly navigate back to the previous destination.
+     */
     @OptIn(ExperimentalFoundationApi::class)
     fun back(){
         composableCoroutineScope?.launch {
@@ -344,6 +396,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Register the activity for the result when trying to import data from a CSV file.
+     *
+     * This method is supposed to only be used by administrators.
+     */
     private fun registerCsvLauncher(){
         csvImportLauncher = mainActivity?.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
             if(result.resultCode == Activity.RESULT_OK){
@@ -356,11 +413,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun NavPager(){
-}
-
+/**
+ * Returns the home screen that you see when first opening the app. It describes only the scaffolding and the bottom navigation bar.
+ *
+ * **Not to be confused with [HomeScreen].**
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(modifier: Modifier = Modifier){
@@ -414,6 +473,11 @@ fun HomePage(modifier: Modifier = Modifier){
     }
 }
 
+/**
+ * Returns the current back stack destination.
+ *
+ * @param navController The [NavController] from which the current back stack destination should be retrieved.
+ */
 @Composable
 fun currentRoute(navController: NavController): String? {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
