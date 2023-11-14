@@ -32,6 +32,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
+/**
+ * Returns the login or signup page.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @Composable
 fun LoginPage(
     modifier: Modifier = Modifier
@@ -46,7 +51,6 @@ fun LoginPage(
         Column (
             horizontalAlignment = Alignment.CenterHorizontally
         ){
-            //Text(text = "Login", style = MaterialTheme.typography.titleMedium)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(vertical = 8.dp)
@@ -160,7 +164,15 @@ fun LoginPage(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Returns the fields required for logging in.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ * @param email The email address of the user.
+ * @param setEmail The method to be called when the email text changes.
+ * @param password The password of the user.
+ * @param setPassword The method to be called when the password text changes.
+ */
 @Composable
 fun LoginFields(
     modifier: Modifier = Modifier,
@@ -175,6 +187,19 @@ fun LoginFields(
     }
 }
 
+/**
+ * Returns the fields required for signing up.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ * @param name The name of the user.
+ * @param setName The method to be called when the name text changes.
+ * @param email The email address of the user.
+ * @param setEmail The method to be called when the email text changes.
+ * @param password The password of the user.
+ * @param setPassword The method to be called when the password text changes.
+ * @param confirmPassword The confirmation of the user's password.
+ * @param setConfirmPassword The method to be called when the confirmation text of the user's password changes.
+ */
 @Composable
 fun SignUpFields(
     modifier: Modifier = Modifier,
@@ -195,6 +220,12 @@ fun SignUpFields(
     }
 }
 
+/**
+ * Returns the field to enter the name.
+ *
+ * @param name The name of the user.
+ * @param setName The method to be called when the name text changes.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NameField(
@@ -212,6 +243,12 @@ fun NameField(
     )
 }
 
+/**
+ * Returns the field to enter the email address.
+ *
+ * @param email The email address of the user.
+ * @param setEmail The method to be called when the email text changes.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmailField(
@@ -229,6 +266,13 @@ fun EmailField(
     )
 }
 
+/**
+ * Returns the field to enter the password.
+ *
+ * @param isConfirm Whether the password field is describing the confirmation password.
+ * @param password The password of the user.
+ * @param setPassword The method to be called when the password text changes.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordField(
