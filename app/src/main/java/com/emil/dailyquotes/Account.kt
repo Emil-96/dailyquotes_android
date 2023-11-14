@@ -13,6 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+/**
+ * Returns the account page.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountPage(
