@@ -44,6 +44,11 @@ const val DIALOG_TEXT = 1
 const val DIALOG_OPTIONS = 2
 const val DIALOG_CONTENT = 3
 
+/**
+ * Returns the settings page.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(modifier: Modifier = Modifier){
@@ -117,6 +122,18 @@ fun LoginView(
 }
 */
 
+/**
+ * Returns a setting that can lead to a different page or has a switch to change a setting directly.
+ * Both will be handled via the [onCheckedChange] method as it gets executed when the user taps on the setting
+ * no matter if it has a switch or not.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ * @param title The short big text indicating what the setting is about or where it leads.
+ * @param description A smaller, more detailed text below the title.
+ * @param isChecked The state of the switch.
+ * @param onCheckedChange The method to be executed when the state of the switch changes.
+ * @param hasSwitch Whether the setting has a switch or not.
+ */
 @Composable
 private fun Setting(
     modifier: Modifier = Modifier,
@@ -154,6 +171,13 @@ private fun Setting(
     }
 }
 
+/**
+ * Returns a dialog.
+ *
+ * @param dialogOptions The customization options of the dialog.
+ * @param setVisibility The is the method that gets called when the visibility changes.
+ * It could handle [DIALOG_HIDDEN], [DIALOG_CONTENT], [DIALOG_OPTIONS] and [DIALOG_TEXT] but currently is only required to handle [DIALOG_HIDDEN].
+ */
 @Composable
 private fun Dialog(
     //modifier: Modifier = Modifier,
@@ -208,6 +232,14 @@ private fun Dialog(
     }
 }
 
+/**
+ * Returns an option field that can be used in a dialog.
+ *
+ * @param title The title of the option. It should be short and descriptive.
+ * @param description A more detailed description of what the option does.
+ * @param selected Whether the option is selected or not.
+ * @param onSelect The code to be executed when the selection state changes.
+ */
 @Composable
 private fun MultipleChoiceOption(
     title: String,
@@ -236,6 +268,17 @@ private fun MultipleChoiceOption(
     }
 }
 
+/**
+ * Represents all possible dialog customization options.
+ *
+ * @param title The title of the dialog.
+ * @param text The text that will be displayed in the dialog if [visibilityMode] is [DIALOG_TEXT].
+ * @param options The map of identifiers and [DialogItem] elements that will be displayed in the dialog if [visibilityMode] is [DIALOG_OPTIONS].
+ * @param itemSelected The currently selected item. This only has an impact if there are options set and [visibilityMode] is [DIALOG_OPTIONS].
+ * @param dialogConfirm The code to be executed when the primary button of the dialog is pressed.
+ * @param visibilityMode Determines the visibility and the content of the dialog. Can be one of [DIALOG_HIDDEN], [DIALOG_TEXT], [DIALOG_OPTIONS] or [DIALOG_CONTENT].
+ * @param content The freely describable content of the dialog. This only has an impact if [visibilityMode] is [DIALOG_CONTENT].
+ */
 class DialogOptions(
     var title: String = "",
     var text: String = "",
@@ -246,6 +289,12 @@ class DialogOptions(
     var content: @Composable () -> Unit = {  }
 )
 
+/**
+ * Represents a dialog option and is used in [Dialog] to interpret the [DialogOptions] as [MultipleChoiceOption] elements.
+ *
+ * @param title The title of the option. Should be short and indicative of the function.
+ * @param description A more detailed description of what the option does.
+ */
 class DialogItem(
     var title: String = "",
     var description: String? = null
