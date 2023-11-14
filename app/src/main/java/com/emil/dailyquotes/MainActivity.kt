@@ -330,11 +330,11 @@ class MainActivity : ComponentActivity() {
     /**
      * The direction in which the navigation flow is going and in which direction the page should be animated when entering.
      *
-     * Returns either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
-     *
      * It is a supporting method used in [NavigationHost] to adjust the page transition accordingly.
      *
      * @param initialDestination The [NavDestination] from which the transition started.
+     *
+     * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
      */
     private fun getNavEnterDirection(initialDestination: NavDestination): Int{
 
@@ -348,11 +348,11 @@ class MainActivity : ComponentActivity() {
     /**
      * The direction in which the navigation flow is going and in which direction the page should be animated when exiting.
      *
-     * Returns either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
-     *
      * It is a supporting method used in [NavigationHost] to adjust the page transition accordingly.
      *
      * @param initialDestination The [NavDestination] from which the transition started.
+     *
+     * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
      */
     private fun getNavExitDirection(initialDestination: NavDestination): Int{
 
@@ -477,6 +477,8 @@ fun HomePage(modifier: Modifier = Modifier){
  * Returns the current back stack destination.
  *
  * @param navController The [NavController] from which the current back stack destination should be retrieved.
+ *
+ * @return The current back stack destination.
  */
 @Composable
 fun currentRoute(navController: NavController): String? {
