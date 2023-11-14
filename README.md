@@ -2,7 +2,6 @@
 
 This is the Android frontend for the DailyQuotes app.
 
-
 ## Building your own app
 
 I recommend copying the repo and opening it with [Android Studio](https://developer.android.com/studio).
@@ -19,6 +18,13 @@ On Linux:
 	./gradlew assembleDebug
 
 The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can be installed on any Android device.
+
+## Documentation
+
+The code should be sufficiently documented in comments in the actual code.
+
+***Note:***  
+Composable functions in [Jetpack Compose](https://developer.android.com/jetpack/compose) draw their content directly when called and thus have no return value. For simplicity sake I have documented the content of those function as the function *returning* it.
 
 ## Current State
 
