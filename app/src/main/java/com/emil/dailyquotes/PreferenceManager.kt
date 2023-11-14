@@ -17,6 +17,9 @@ const val PREFERENCE_KEY_QUOTE = "daily_quote"
 const val PREFERENCE_KEY_DATE = "daily_date"
 const val PREFERENCE_KEY_VERSION = "database_version"
 
+/**
+ * A class to handle all interaction with the local storage.
+ */
 class PreferenceManager{
 
     private var _quote: MutableLiveData<Quote> = MutableLiveData()
@@ -24,12 +27,20 @@ class PreferenceManager{
 
     private var quoteDatabaseVersion: Long = 0L
 
+    /**
+     * The constructor.
+     */
     init {
         loadInfo {
             firebaseManager?.loadInfo()
         }
     }
 
+    /**
+     * Loads the saved data of the information about the remote database at the time of the last fetch.
+     *
+     * @param onFinished The code to be executed once the information is retrieved.
+     */
     private fun loadInfo(onFinished: () -> Unit){
         mainActivity?.lifecycleScope?.launch {
             mainActivity?.dataStore?.data?.collect{ preferences ->
@@ -39,6 +50,11 @@ class PreferenceManager{
         }
     }
 
+    /**
+     * Saves the info to the local storage.
+     *
+     * @param databaseVersion The version number of the database at that time.
+     */
     fun saveInfo(
         databaseVersion: Long
     ){
@@ -49,10 +65,16 @@ class PreferenceManager{
         }
     }
 
+    /**
+     * @return The database version only if it has been retrieved first.
+     */
     fun getLocalDatabaseVersion(): Long{
         return quoteDatabaseVersion
     }
-    
+
+    /**
+     * Loads the quote that has been saved to the local storage as the quote of the day.
+     */
     fun loadDailyQuote(){
         Log.d("PreferenceManager", "loading random quote")
         mainActivity?.lifecycleScope?.launch {
@@ -76,6 +98,11 @@ class PreferenceManager{
         }
     }
 
+    /**
+     * Saves a given [Quote] element to the local storage as the quote of the day.
+     *
+     * @param quote The quote to be saved.
+     */
     private suspend fun saveDailyQuote(quote: Quote){
         mainActivity?.dataStore?.edit {  mutablePreferences ->
             mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)] = parseQuoteToJson(quote)
