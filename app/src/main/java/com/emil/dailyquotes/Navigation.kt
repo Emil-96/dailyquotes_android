@@ -20,12 +20,23 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.painterResource
 
+/**
+ * Describes different items to be used in the bottom navigation bar on the home screen.
+ */
 sealed class BottomNavigationItem(val route: String, val label: String, val icon: Int){
+
+    /**
+     * The item leading to the home page.
+     */
     object HomeScreenItem: BottomNavigationItem(
         route = "home",
         label = "Home",
         icon = R.drawable.ic_quote
     )
+
+    /**
+     * The item leading to the profile page.
+     */
     object ProfileScreenItem: BottomNavigationItem(
         route = "profile",
         label = "Profile",
@@ -33,6 +44,15 @@ sealed class BottomNavigationItem(val route: String, val label: String, val icon
     )
 }
 
+/**
+ * Returns the [EnterTransition] to be used when navigating between different screens.
+ *
+ * @param durationMillis The duration of the transition animation.
+ * @param direction The direction the page should move. Takes either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+ * @param orientation The current screen orientation.
+ *
+ * @return The desired [EnterTransition] that can directly be applied to a destination.
+ */
 fun navEnterTransition(durationMillis: Int = 350, direction: Int, orientation: Int) : EnterTransition {
     if(orientation == Configuration.ORIENTATION_PORTRAIT) {
         return slideInHorizontally(
@@ -55,6 +75,15 @@ fun navEnterTransition(durationMillis: Int = 350, direction: Int, orientation: I
     }
 }
 
+/**
+ * Returns the [ExitTransition] to be used when navigating between different screens.
+ *
+ * @param durationMillis The duration of the transition animation.
+ * @param direction The direction the page should move. Takes either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+ * @param orientation The current screen orientation.
+ *
+ * @return The desired [ExitTransition] that can directly be applied to a destination.
+ */
 fun navExitTransition(durationMillis: Int = 200, direction: Int, orientation: Int) : ExitTransition {
     if(orientation == Configuration.ORIENTATION_PORTRAIT) {
         return slideOutHorizontally(
@@ -77,6 +106,11 @@ fun navExitTransition(durationMillis: Int = 200, direction: Int, orientation: In
     }
 }
 
+/**
+ * Returns a generic [TopAppBar] with a title and a back button.
+ *
+ * @param title The title to be displayed on the [TopAppBar]
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopNavBar(title: String){
