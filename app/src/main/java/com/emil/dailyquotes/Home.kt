@@ -34,6 +34,11 @@ import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.placeholder.placeholder
 import java.util.Date
 
+/**
+ * Returns the home screen page.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier){
 
