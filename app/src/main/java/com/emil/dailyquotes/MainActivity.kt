@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun NavigationPager(){
 
-        var pagerPages = remember { pages }
+        val pagerPages = remember { pages }
 
         var userInputEnabled by remember { mutableStateOf(true) }
 
@@ -183,8 +183,6 @@ class MainActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(callback)
         callback.isEnabled = true
-
-        //val pagerPages = pages.observeAsState()
 
         pagerState = rememberPagerState(
             pageCount = { pagerPages.size }
@@ -247,11 +245,11 @@ class MainActivity : ComponentActivity() {
     fun NavigationHost(){
 
         pageNavController = rememberNavController()
-        currentPage = currentRoute(navController = pageNavController!!)
+        currentPage = currentRoute(navController = pageNavController)
         val orientation = LocalConfiguration.current.orientation
 
         NavHost(
-            navController = pageNavController!!,
+            navController = pageNavController,
             startDestination = "home",
         ){
             composable(
@@ -305,7 +303,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getNavEnterDirection(initialDestination: NavDestination): Int{
 
-        return if(pageNavController?.previousBackStackEntry?.destination?.route == initialDestination.route){
+        return if(pageNavController.previousBackStackEntry?.destination?.route == initialDestination.route){
             DIRECTION_RIGHT
         }else{
             DIRECTION_LEFT
@@ -314,9 +312,9 @@ class MainActivity : ComponentActivity() {
 
     private fun getNavExitDirection(initialDestination: NavDestination): Int{
 
-        val currentBackStack = pageNavController?.currentBackStack?.value
+        val currentBackStack = pageNavController.currentBackStack.value
 
-        return if(currentBackStack?.get(currentBackStack.size - 2)?.destination?.route == initialDestination.route){
+        return if(currentBackStack[currentBackStack.size - 2].destination.route == initialDestination.route){
             DIRECTION_LEFT
         }else{
             DIRECTION_RIGHT
@@ -331,7 +329,7 @@ class MainActivity : ComponentActivity() {
                 pagerState.animateScrollToPage(pages.lastIndex)
             }
         }else{
-            pageNavController?.let{ controller ->
+            pageNavController.let{ controller ->
                 if(currentPage != route){
                     controller.navigate(route)
                 }
