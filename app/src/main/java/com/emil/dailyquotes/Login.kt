@@ -191,7 +191,7 @@ fun SignUpFields(
         NameField(name = name, setName = setName)
         EmailField(email = email, setEmail = setEmail)
         PasswordField(password = password, setPassword = setPassword)
-        PasswordField(isConfirm = true, password = password, setPassword = setPassword)
+        PasswordField(isConfirm = true, password = confirmPassword, setPassword = setConfirmPassword)
     }
 }
 
