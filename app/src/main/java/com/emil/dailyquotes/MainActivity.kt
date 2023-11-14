@@ -127,9 +127,9 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     if(USE_PAGER_EXPERIMENTAL){
-                        getNavPager()
+                        NavigationPager()
                     }else{
-                        getNavHost()
+                        NavigationHost()
                     }
 
                 }
@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun getNavPager(){
+    fun NavigationPager(){
 
         var pagerPages = remember { pages }
 
@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun getNavHost(){
+    fun NavigationHost(){
 
         pageNavController = rememberNavController()
         currentPage = currentRoute(navController = pageNavController!!)
