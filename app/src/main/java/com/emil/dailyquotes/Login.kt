@@ -86,6 +86,7 @@ fun LoginPage(
                 var name by remember { mutableStateOf("") }
                 var email by remember { mutableStateOf("") }
                 var password by remember { mutableStateOf("") }
+                var confirmPassword by remember { mutableStateOf("") }
 
                 Box(
                     modifier = Modifier
@@ -106,7 +107,9 @@ fun LoginPage(
                             email = email,
                             setEmail = { email = it },
                             password = password,
-                            setPassword = { password = it }
+                            setPassword = { password = it },
+                            confirmPassword = confirmPassword,
+                            setConfirmPassword = { confirmPassword = it }
                         )
                     }
                 }
@@ -122,7 +125,7 @@ fun LoginPage(
                     var clicked by remember { mutableStateOf(false) }
 
                     Button(
-                        enabled = email.isNotEmpty() && password.isNotEmpty(),
+                        enabled = email.isNotEmpty() && password.isNotEmpty() && (login || password == confirmPassword),
                         onClick = {
                             clicked = true
                             if(login){
@@ -180,12 +183,15 @@ fun SignUpFields(
     email: String = "",
     setEmail: (String) -> Unit = {},
     password: String = "",
-    setPassword: (String) -> Unit = {}
+    setPassword: (String) -> Unit = {},
+    confirmPassword: String = "",
+    setConfirmPassword: (String) -> Unit = {}
 ){
     Column(modifier = modifier) {
         NameField(name = name, setName = setName)
         EmailField(email = email, setEmail = setEmail)
         PasswordField(password = password, setPassword = setPassword)
+        PasswordField(isConfirm = true, password = password, setPassword = setPassword)
     }
 }
 
@@ -226,6 +232,7 @@ fun EmailField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordField(
+    isConfirm: Boolean = false,
     password: String,
     setPassword: (String) -> Unit
 ){
@@ -233,7 +240,7 @@ fun PasswordField(
         modifier = Modifier.fillMaxWidth(),
         value = password,
         onValueChange = { setPassword(it) },
-        label = { Text(text = "Password") },
+        label = { Text(text = if(isConfirm) "Password" else "Confirm password") },
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password
