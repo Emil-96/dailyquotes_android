@@ -24,7 +24,7 @@ The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can 
 The code should be sufficiently documented in comments in the actual code.
 
 ***Note:***  
-Composable functions in [Jetpack Compose](https://developer.android.com/jetpack/compose) draw their content directly when called and thus have no return value. For simplicity sake I have documented the content of those function as the function *returning* it.
+Composable functions in [Jetpack Compose](https://developer.android.com/jetpack/compose) draw their content directly when called and thus have no return value. For simplicity sake I have documented the content of those functions as the functions *returning* it.
 
 ## Current State
 
