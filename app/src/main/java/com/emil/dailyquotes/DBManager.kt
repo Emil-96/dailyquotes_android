@@ -178,7 +178,7 @@ fun DBManagerPage(dbManager: DBManager){
 }
 
 @Composable
-fun CsvListItem(element: Quote){
+private fun CsvListItem(element: Quote){
     Row (
         modifier = Modifier.height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -195,7 +195,7 @@ fun CsvListItem(element: Quote){
 }
 
 @Composable
-fun CsvListItemText(
+private fun CsvListItemText(
     modifier: Modifier = Modifier,
     string: String
 ){
@@ -219,7 +219,7 @@ fun openCsv(){
 fun parseCsvUri(uri: Uri, dbManager: DBManager){
     try {
 
-        var csvList = arrayListOf<Quote>()
+        val csvList = arrayListOf<Quote>()
 
         val inputStream = mainActivity?.contentResolver?.openInputStream(uri)
         val bufferedReader = BufferedReader(InputStreamReader(inputStream))
@@ -227,7 +227,7 @@ fun parseCsvUri(uri: Uri, dbManager: DBManager){
         var line: String? = bufferedReader.readLine()
         while (line != null) {
             //Log.d("CSV", line)
-            val newElement = parseQuoteFromCsv(line, dbManager)
+            val newElement = parseQuoteFromCsv(line)
             newElement?.let { csvList.add(it) }
             line = bufferedReader.readLine()
         }
