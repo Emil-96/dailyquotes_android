@@ -19,6 +19,11 @@ import kotlin.random.Random
 
 private val NAME_KEY = "firebase_display_name"
 
+/**
+ * A class to handle all interaction with the remote backend.
+ *
+ * @param context A context object required to save certain things locally.
+ */
 class FirebaseManager(private val context: Context){
     private val auth = Firebase.auth
     private val db = Firebase.firestore
@@ -31,6 +36,9 @@ class FirebaseManager(private val context: Context){
     private var quoteDao: QuoteDao? = quoteDatabase?.quoteDao()
     private var localDatabaseSize: Int = 0
 
+    /**
+     * The constructor.
+     */
     init {
         loadUserInfo()
         log("Trying to load preferences")
@@ -44,6 +52,9 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * Fetches the database information of the remote database.
+     */
     fun loadInfo(){
         quoteDao = quoteDatabase?.quoteDao()
         db.collection("info").document("quotes").get().addOnSuccessListener { document ->
@@ -56,10 +67,16 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * @return The current Firebase user.
+     */
     fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
     }
 
+    /**
+     * Fetches the user information and save the result locally.
+     */
     private fun loadUserInfo(){
         auth.uid?.let{ userId ->
             db
@@ -79,6 +96,11 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * Saves the name to the local storage.
+     *
+     * @param name The name to be saved.
+     */
     private suspend fun saveName(name: String){
         context.dataStore.edit {  mutablePreferences ->
             mutablePreferences[stringPreferencesKey(NAME_KEY)] = name
@@ -86,14 +108,29 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * @return The name of the user.
+     */
     fun getName(): LiveData<String> {
         return name
     }
 
+    /**
+     * @return The admin state of the user.
+     */
     fun isAdmin(): Boolean{
         return isAdmin
     }
 
+    /**
+     * Registers a user to the remote backend.
+     *
+     * @param name The name of the user.
+     * @param email The email address of the user.
+     * @param password The password of the user.
+     * @param onSuccess The code that should be executed when the registration succeeds.
+     * @param onFailure The code that should be executed when the registration fails.
+     */
     fun register(
         name: String,
         email: String,
@@ -119,6 +156,14 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * Logs in a user to the remote backend.
+     *
+     * @param email The email address of the user.
+     * @param password The password of the user.
+     * @param onSuccess The code that should be executed when the login succeeds.
+     * @param onFailure The code that should be executed when the login fails.
+     */
     fun logIn(
         email: String,
         password: String,
@@ -132,6 +177,11 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * Logs out the current user.
+     *
+     * @param onSuccess The code to be executed when the user is logged out.
+     */
     fun logOut(
         onSuccess: () -> Unit
     ){
@@ -139,10 +189,21 @@ class FirebaseManager(private val context: Context){
         onSuccess()
     }
 
+    /**
+     * A debugging method to log a message to the console.
+     *
+     * @param message The message to be logged.
+     */
     private fun log(message: String){
         Log.d("FirebaseManager", message)
     }
 
+    /**
+     * Uploads a list of [Quote] elements to the remote database.
+     *
+     * @param elements The list of [Quote] elements that to be uploaded.
+     * @param onSuccess The code to be executed when the upload succeeds.
+     */
     fun uploadCsvElements(elements: List<Quote>, onSuccess: () -> Unit){
         if(!isAdmin){
             onSuccess()
@@ -162,12 +223,22 @@ class FirebaseManager(private val context: Context){
 
     }
 
+    /**
+     * Creates batches of [Map] elements representing [Quote] elements.
+     *
+     * Uploading to Firebase supports only batches of size up to 500 elements (as of 2023),
+     * so the list of all [Quote] elements cannot be simply converted to a corresponding list of [Map] elements of the same size
+     * but has to be cut into multiple smaller lists.
+     *
+     * @param elements The list of all [Quote] elements to be uploaded.
+     * @param batchSize The size of the batches.
+     */
     private fun formatCsvElementsToBatches(elements: List<Quote>, batchSize: Int = 500): ArrayList<List<Map<String, String>>>{
 
         val fullMapList: ArrayList<Map<String, String>> = arrayListOf()
 
         for(element in elements){
-            fullMapList.add(getMapFromCsvElement(element))
+            fullMapList.add(parseQuoteToMap(element))
         }
 
         val outputListOfLists: ArrayList<List<Map<String, String>>> = arrayListOf()
@@ -185,7 +256,14 @@ class FirebaseManager(private val context: Context){
 
     }
 
-    private fun getMapFromCsvElement(element: Quote): HashMap<String, String> {
+    /**
+     * Takes a [Quote] element and turns it into a [Map] element that is compatible with the remote database.
+     *
+     * @param element The [Quote] to be parsed.
+     *
+     * @return The corresponding [Map] element representing the [Quote] element.
+     */
+    private fun parseQuoteToMap(element: Quote): HashMap<String, String> {
 
         return hashMapOf(
             "category" to element.category,
@@ -196,6 +274,11 @@ class FirebaseManager(private val context: Context){
 
     }
 
+    /**
+     * Fetches all quotes from the remote database and saves them to the local database.
+     *
+     * @param onSuccess The code to be executed when the fetch succeeds.
+     */
     private fun loadAllQuotes(onSuccess: () -> Unit = {}){
 
         log("Loading all quotes")
@@ -215,6 +298,12 @@ class FirebaseManager(private val context: Context){
         }
     }
 
+    /**
+     * Selects a random quote. Tries to get a random quote from the local database.
+     * If that fails, it fetches the remote database and selects a random quote from there.
+     *
+     * @param getQuote The code that takes in a [Quote] element and processes it once a random quote is selected.
+     */
     fun getRandomQuote(getQuote: (Quote) -> Unit){
 
         if(localDatabaseSize != 0){
@@ -230,6 +319,13 @@ class FirebaseManager(private val context: Context){
 
     }
 
+    /**
+     * Selects a random quote from the local database.
+     *
+     * It is supposed to only be used as a helper in [getRandomQuote].
+     *
+     * @param getQuote The code that takes in a [Quote] element and processes it once a random quote is selected.
+     */
     private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit){
         mainActivity?.lifecycleScope?.launch {
             quoteDao?.getAll().also {
@@ -245,7 +341,14 @@ class FirebaseManager(private val context: Context){
 
 }
 
-fun parseQuote(documentSnapshot: DocumentSnapshot): Quote {
+/**
+ * Takes in a [DocumentSnapshot] representing a quote and parses it to a [Quote] element.
+ *
+ * @param documentSnapshot The document representing a quote.
+ *
+ * @return The parsed [Quote] element.
+ */
+private fun parseQuote(documentSnapshot: DocumentSnapshot): Quote {
     return Quote(
         id = documentSnapshot.id,
         category = documentSnapshot["category"] as String,
