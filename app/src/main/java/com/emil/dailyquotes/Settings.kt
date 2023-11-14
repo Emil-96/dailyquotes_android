@@ -104,6 +104,7 @@ fun SettingsPage(modifier: Modifier = Modifier){
     }
 }
 
+/*
 @Composable
 fun LoginView(
     modifier: Modifier = Modifier
@@ -114,6 +115,7 @@ fun LoginView(
         Text(text = "Log in view")
     }
 }
+*/
 
 @Composable
 fun Setting(
