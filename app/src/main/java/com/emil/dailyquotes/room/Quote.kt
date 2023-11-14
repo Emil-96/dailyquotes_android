@@ -39,15 +39,17 @@ data class Quote(
 interface QuoteDao{
 
     /**
-     * Returns a [List] of all [Quote] elements.
+     * @return A [List] of all [Quote] elements.
      */
     @Query("SELECT * FROM quote")
     suspend fun getAll(): List<Quote>
 
     /**
-     * Returns a [Quote] element corresponding to the [quoteId].
+     * Returns the [Quote] element corresponding to the [quoteId].
      *
      * @param quoteId The id of the desired [Quote] element.
+     *
+     * @return The [Quote] element corresponding to the [quoteId].
      */
     @Query("SELECT * FROM quote WHERE id = (:quoteId)")
     suspend fun getQuoteById(quoteId: String): Quote
@@ -76,7 +78,7 @@ interface QuoteDao{
 abstract class QuoteDatabase : RoomDatabase(){
 
     /**
-     * Returns the Data Access Object used to interact with the database.
+     * @return The Data Access Object used to interact with the database.
      */
     abstract fun quoteDao(): QuoteDao
 }
