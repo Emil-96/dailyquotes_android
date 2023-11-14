@@ -17,6 +17,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+/**
+ * Returns the profile page.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @Composable
 fun ProfilePage(modifier: Modifier = Modifier){
     Box(
@@ -45,6 +50,11 @@ fun ProfilePage(modifier: Modifier = Modifier){
     }
 }
 
+/**
+ * Returns the field that will be displayed when the user is not signed in.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ */
 @Composable
 fun NotSignedIn(modifier: Modifier = Modifier){
     Box(
