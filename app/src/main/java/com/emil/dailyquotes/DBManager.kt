@@ -44,25 +44,46 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
+/**
+ * Used for all interaction when importing and uploading data from a CSV file.
+ *
+ * Should only be used by administrators.
+ */
 class DBManager: ViewModel(){
 
     private val _importedLines: MutableLiveData<List<Quote>> = MutableLiveData()
     val importedLines: LiveData<List<Quote>> = _importedLines
 
+    /**
+     * The constructor.
+     */
     init {
         // Initialize LiveData objects with empty data or your default values
         _importedLines.value = listOf()
     }
 
+    /**
+     * Add all elements to the temporary saved quotes to be used later.
+     *
+     * @param elements The [Quote] elements that should be saved.
+     */
     fun addElements(elements: ArrayList<Quote>){
         _importedLines.postValue(elements.toList())
         Log.d("CSV", "Added ${elements.size} lines")
     }
 
+    /**
+     * Clear all temporary saved quotes.
+     */
     fun clearElements(){
         _importedLines.postValue(emptyList())
     }
 
+    /**
+     * Start uploading all temporary saved quotes to the remote backend.
+     *
+     * @param onSuccess Code that will be executed when the upload succeeds.
+     */
     fun uploadCsvElements(onSuccess: () -> Unit){
         importedLines.value?.let {
             firebaseManager?.uploadCsvElements(
@@ -74,6 +95,11 @@ class DBManager: ViewModel(){
 
 }
 
+/**
+ * Returns the database management page.
+ *
+ * @param dbManager The database manager to act as an interface.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DBManagerPage(dbManager: DBManager){
@@ -177,6 +203,11 @@ fun DBManagerPage(dbManager: DBManager){
     }
 }
 
+/**
+ * Returns a list item for the preview of the temporary saved quotes.
+ *
+ * @param element The quote that should be displayed.
+ */
 @Composable
 private fun CsvListItem(element: Quote){
     Row (
@@ -194,6 +225,14 @@ private fun CsvListItem(element: Quote){
     }
 }
 
+/**
+ * Returns the text of list item.
+ *
+ * To be used in [CsvListItem].
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ * @param string The text to be displayed.
+ */
 @Composable
 private fun CsvListItemText(
     modifier: Modifier = Modifier,
@@ -207,7 +246,10 @@ private fun CsvListItemText(
     )
 }
 
-fun openCsv(){
+/**
+ * Launch the system file chooser to select a CSV file from which the data should be imported.
+ */
+private fun openCsv(){
 
     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
     //intent.addCategory(Intent.CATEGORY_OPENABLE)
@@ -216,6 +258,12 @@ fun openCsv(){
     csvImportLauncher?.launch(intent)
 }
 
+/**
+ * Parse the selected CSV file and save the content to the temporary saved quotes for further processing.
+ *
+ * @param uri The [Uri] pointing to the selected CSV file.
+ * @param dbManager The database manager to save the content of the CSV file to.
+ */
 fun parseCsvUri(uri: Uri, dbManager: DBManager){
     try {
 
@@ -239,7 +287,14 @@ fun parseCsvUri(uri: Uri, dbManager: DBManager){
     }
 }
 
-fun parseQuoteFromCsv(csvLine: String, dbManager: DBManager): Quote? {
+/**
+ * Takes in a line from the CSV file and parses it to a [Quote].
+ *
+ * @param csvLine The line form the CSV file.
+ *
+ * @return The parsed [Quote] element.
+ */
+private fun parseQuoteFromCsv(csvLine: String): Quote? {
     val parts = csvLine.split("\t")
     return if(parts.size == 5 && parts[0].isNotEmpty()){
         //Log.d("CSV", "adding ${parts[2]}")
@@ -259,10 +314,24 @@ fun parseQuoteFromCsv(csvLine: String, dbManager: DBManager): Quote? {
     }
 }
 
+/**
+ * Takes a JSON String and parses it to a [Quote].
+ *
+ * @param jsonQuote The JSON String representing a quote.
+ *
+ * @return The parsed [Quote] element.
+ */
 fun parseQuote(jsonQuote: String): Quote? {
     return Gson().fromJson(jsonQuote, Quote::class.java)
 }
 
+/**
+ * Takes a [Quote] element and parses it to a JSON String.
+ *
+ * @param quote The [Quote] element to be parsed.
+ *
+ * @return The parsed JSON String.
+ */
 fun parseQuoteToJson(quote: Quote): String{
     return Gson().toJson(quote).toString()
 }
