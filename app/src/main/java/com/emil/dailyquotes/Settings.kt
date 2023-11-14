@@ -118,7 +118,7 @@ fun LoginView(
 */
 
 @Composable
-fun Setting(
+private fun Setting(
     modifier: Modifier = Modifier,
     title: String,
     description: String? = null,
@@ -155,7 +155,7 @@ fun Setting(
 }
 
 @Composable
-fun Dialog(
+private fun Dialog(
     //modifier: Modifier = Modifier,
     dialogOptions: DialogOptions,
     setVisibility: (Int) -> Unit
@@ -209,7 +209,7 @@ fun Dialog(
 }
 
 @Composable
-fun MultipleChoiceOption(
+private fun MultipleChoiceOption(
     title: String,
     description: String?,
     selected: Boolean,
