@@ -97,14 +97,16 @@ class FirebaseManager(private val context: Context){
     }
 
     /**
-     * Saves the name to the local storage.
+     * Saves the user info to the local storage.
      *
      * @param name The name to be saved.
+     * @param email The email to be saved.
      */
-    private suspend fun saveName(name: String){
+    private suspend fun saveUserInfo(name: String, email: String){
         context.dataStore.edit {  mutablePreferences ->
             mutablePreferences[stringPreferencesKey(NAME_KEY)] = name
-            log("Saved name ($name)")
+            mutablePreferences[stringPreferencesKey(EMAIL_KEY)] = email
+            log("Saved name ($name) and email ($email)")
         }
     }
 
