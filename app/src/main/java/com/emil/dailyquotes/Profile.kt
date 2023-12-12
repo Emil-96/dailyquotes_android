@@ -72,6 +72,12 @@ fun ProfilePage(
     }
 }
 
+/**
+ * Returns the actual view of the Profile with all its elements.
+ *
+ * @param modifier A [Modifier] to adjust the content.
+ * @param firebaseManager A [FirebaseManager] to retrieve information about the currently signed in user.
+ */
 @Composable
 private fun ProfileView(
     modifier: Modifier = Modifier,
@@ -121,6 +127,11 @@ private fun ProfileView(
     }
 }
 
+/**
+ * The label element used in [ProfileView].
+ *
+ * @param label The label text to be displayed.
+ */
 @Composable
 private fun LabelText(label: String){
     Text(
@@ -130,6 +141,11 @@ private fun LabelText(label: String){
     )
 }
 
+/**
+ * The content text element used in [ProfileView].
+ *
+ * @param text The text to be displayed.
+ */
 @Composable
 private fun FieldText(text: String){
     Text(
