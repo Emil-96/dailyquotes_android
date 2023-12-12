@@ -51,7 +51,7 @@ class FirebaseManager(private val context: Context){
                 .collect { preferences ->
                     _name.postValue(preferences[stringPreferencesKey(NAME_KEY)] ?: "")
                     _email.postValue(preferences[stringPreferencesKey(EMAIL_KEY)] ?: "")
-                    log("Loaded name and email")
+                    log("Loaded name (${name.value}) and email (${email.value})")
                 }
         }
     }
@@ -89,6 +89,7 @@ class FirebaseManager(private val context: Context){
      * Fetches the user information and save the result locally.
      */
     private fun loadUserInfo(){
+        log("Loading user info")
         auth.uid?.let{ userId ->
             db
                 .collection("users")
@@ -98,6 +99,9 @@ class FirebaseManager(private val context: Context){
 
                     val name = snapshot.get("name").toString()
                     val email = auth.currentUser?.email
+
+                    log("retrieved name \"$name\" and email \"$email\"")
+
                     mainActivity?.lifecycleScope?.launch{
                         saveUserInfo(name, email ?: "")
                     }
