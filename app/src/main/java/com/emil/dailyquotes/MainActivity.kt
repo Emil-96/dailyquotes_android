@@ -468,7 +468,7 @@ fun HomePage(modifier: Modifier = Modifier){
                 route = "profile",
                 enterTransition = { navEnterTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
                 exitTransition = { navExitTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
-                content = { ProfilePage() }
+                content = { firebaseManager?.let{ ProfilePage(firebaseManager = it) } }
             )
         }
     }

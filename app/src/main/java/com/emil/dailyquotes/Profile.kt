@@ -33,9 +33,13 @@ import androidx.compose.ui.unit.dp
  * Returns the profile page.
  *
  * @param modifier A [Modifier] to adjust the content.
+ * @param firebaseManager A [FirebaseManager] to retrieve information about the currently signed in user.
  */
 @Composable
-fun ProfilePage(modifier: Modifier = Modifier){
+fun ProfilePage(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
+){
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -58,13 +62,24 @@ fun ProfilePage(modifier: Modifier = Modifier){
                 }
             }
         }
-        //NotSignedIn()
-        ProfileView()
+        if(firebaseManager.isSignedIn()){
+            ProfileView(firebaseManager = firebaseManager)
+        }else {
+            NotSignedIn()
+        }
     }
 }
 
 @Composable
-private fun ProfileView(modifier: Modifier = Modifier){
+private fun ProfileView(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
+){
+
+    val name = firebaseManager.getName()
+    val email = firebaseManager.getEmail()
+    val profileImage = null
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -77,18 +92,22 @@ private fun ProfileView(modifier: Modifier = Modifier){
             Image(
                 modifier = Modifier
                     .size(200.dp)
-                    .clip(CircleShape),
-                painter = painterResource(id = R.drawable.stock_profile),
-                contentDescription = "profile image"
+                    .clip(CircleShape)
+                    .background(color = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)),
+                painter = painterResource(
+                    id = R.drawable.ic_person
+                ),
+                contentDescription = "profile image",
+                colorFilter = if(profileImage == null) ColorFilter.tint(MaterialTheme.colorScheme.onBackground.copy(alpha = .5f)) else null,
             )
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 LabelText(label = "Name")
-                FieldText(text = "Joshua")
+                FieldText(text = name.value ?: "")
                 LabelText(label = "E-Mail")
-                FieldText(text = "joshua.felder@email.com")
+                FieldText(text = email.value ?: "")
             }
             Spacer(modifier = Modifier.weight(1f))
             OutlinedButton(
