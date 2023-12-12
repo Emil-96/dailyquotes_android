@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 private val NAME_KEY = "firebase_display_name"
+private val EMAIL_KEY = "firebase_email"
 
 /**
  * A class to handle all interaction with the remote backend.
@@ -86,8 +87,9 @@ class FirebaseManager(private val context: Context){
                 .addOnSuccessListener { snapshot ->
 
                     val name = snapshot.get("name").toString()
+                    val email = auth.currentUser?.email
                     mainActivity?.lifecycleScope?.launch{
-                        saveName(name)
+                        saveUserInfo(name, email ?: "")
                     }
                     _name.postValue(name)
 
