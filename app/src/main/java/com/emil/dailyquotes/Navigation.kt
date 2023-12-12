@@ -1,6 +1,7 @@
 package com.emil.dailyquotes
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -117,7 +118,12 @@ fun TopNavBar(title: String){
     TopAppBar(
         title = { Text(text = title) },
         navigationIcon = {
-            IconButton(onClick = { mainActivity?.back() }) {
+            IconButton(
+                onClick = {
+                    Log.d("TopNavBar", "tapped on back icon")
+                    mainActivity?.back()
+                }
+            ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_back),
                     contentDescription = "back"
