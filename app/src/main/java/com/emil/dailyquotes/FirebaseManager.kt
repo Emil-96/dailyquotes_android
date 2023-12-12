@@ -30,7 +30,9 @@ class FirebaseManager(private val context: Context){
     private val db = Firebase.firestore
 
     private var _name: MutableLiveData<String> = MutableLiveData("")
+    private var _email: MutableLiveData<String> = MutableLiveData("")
     private val name: LiveData<String> = _name
+    private val email: LiveData<String> = _email
 
     private var isAdmin = false
 
@@ -48,7 +50,8 @@ class FirebaseManager(private val context: Context){
             context.dataStore.data
                 .collect { preferences ->
                     _name.postValue(preferences[stringPreferencesKey(NAME_KEY)] ?: "")
-                    log("Loaded name")
+                    _email.postValue(preferences[stringPreferencesKey(EMAIL_KEY)] ?: "")
+                    log("Loaded name and email")
                 }
         }
     }
@@ -117,6 +120,13 @@ class FirebaseManager(private val context: Context){
      */
     fun getName(): LiveData<String> {
         return name
+    }
+
+    /**
+     * @return The email of the user.
+     */
+    fun getEmail(): LiveData<String> {
+        return email
     }
 
     /**
