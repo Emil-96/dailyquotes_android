@@ -57,6 +57,13 @@ class FirebaseManager(private val context: Context){
     }
 
     /**
+     * @return True if a user is signed in.
+     */
+    fun isSignedIn(): Boolean{
+        return auth.currentUser != null
+    }
+
+    /**
      * Fetches the database information of the remote database.
      */
     fun loadInfo(){
