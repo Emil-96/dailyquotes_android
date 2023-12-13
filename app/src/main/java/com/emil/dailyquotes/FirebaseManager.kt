@@ -182,7 +182,7 @@ class FirebaseManager(private val context: Context){
     }
 
     /**
-     * Logs in a user to the remote backend.
+     * Logs in a user to the remote backend and stores their account information locally.
      *
      * @param email The email address of the user.
      * @param password The password of the user.
@@ -204,7 +204,7 @@ class FirebaseManager(private val context: Context){
     }
 
     /**
-     * Logs out the current user.
+     * Logs out the current user and removes all currently stored information about them.
      *
      * @param onSuccess The code to be executed when the user is logged out.
      */
