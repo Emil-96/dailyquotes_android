@@ -32,9 +32,7 @@ The app is currently under development and is not ready to be used.
 
 ### Known issues
 
-- When logging in, it loads indefinitely (leaving the screen manually works)
 - When opening the app, a daily quote is retrieved twice
-- Tapping on the back button in the top bar doesn't currently work
 - The profile can't be edited at the moment
 
 ### Things coming in the future
