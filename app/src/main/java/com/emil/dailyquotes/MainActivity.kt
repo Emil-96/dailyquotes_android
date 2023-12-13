@@ -392,9 +392,11 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     fun back(){
         Log.d("MainActivity", "going back")
-        composableCoroutineScope?.launch {
+        pageNavController.popBackStack()
+        //callback.handleOnBackPressed()
+        /*composableCoroutineScope?.launch {
             pagerState.animateScrollToPage(pages.lastIndex - 1)
-        }
+        }*/
     }
 
     /**
