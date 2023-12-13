@@ -196,6 +196,7 @@ class FirebaseManager(private val context: Context){
         onFailure: () -> Unit = {}
     ){
         auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
+            loadUserInfo()
             onSuccess()
         }.addOnFailureListener {
             onFailure()
@@ -211,6 +212,10 @@ class FirebaseManager(private val context: Context){
         onSuccess: () -> Unit
     ){
         auth.signOut()
+        mainActivity?.lifecycleScope?.launch {
+            saveUserInfo("", "")
+            isAdmin = false
+        }
         onSuccess()
     }
 
