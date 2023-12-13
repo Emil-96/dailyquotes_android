@@ -215,8 +215,8 @@ class FirebaseManager(private val context: Context){
         mainActivity?.lifecycleScope?.launch {
             saveUserInfo("", "")
             isAdmin = false
+            onSuccess()
         }
-        onSuccess()
     }
 
     /**
