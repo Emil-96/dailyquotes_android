@@ -15,8 +15,11 @@ import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.core.EaseInCirc
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -47,6 +50,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -429,55 +433,123 @@ class MainActivity : ComponentActivity() {
  *
  * @param modifier A [Modifier] to adjust the content.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomePage(modifier: Modifier = Modifier){
 
+    if(firebaseManager == null){
+        return
+    }
+
+    val navigationItems = getNavigationDestinations(firebaseManager!!)
+
+    val usePager = true
+
+    val pagerState = rememberPagerState(pageCount = {navigationItems.size})
+
     val navController = rememberNavController()
     val currentRoute = currentRoute(navController = navController)
-    val orientation = LocalConfiguration.current.orientation
+    val localConfig = LocalConfiguration.current
+    val orientation = localConfig.orientation
+    val screenWidth = with(LocalDensity.current){ localConfig.screenWidthDp.dp.toPx() }
+
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
-
-            val navigationItems = listOf(BottomNavigationItem.HomeScreenItem, BottomNavigationItem.ProfileScreenItem)
-
             NavigationBar {
                 navigationItems.forEachIndexed{ index, item ->
+                    val navItem = item.getNavigationItem()
                     NavigationBarItem(
-                        selected = currentRoute == item.route,
+                        selected = pagerState.currentPage == index,
                         onClick = {
-                            if(currentRoute != item.route){
-                                navController.navigate(item.route){
-                                    launchSingleTop = true
-                                    popUpTo("home")
+                            if(currentRoute != navItem.route){
+                                if(usePager){
+                                    scope.launch {
+                                        pagerState.animateScrollBy(
+                                            value = screenWidth * (index - pagerState.currentPage),
+                                            animationSpec = tween(durationMillis = 350)
+                                        )
+                                    }
+                                }else {
+                                    navController.navigate(navItem.route) {
+                                        launchSingleTop = true
+                                        popUpTo("home")
+                                    }
                                 }
                         }},
-                        icon = { Icon(painterResource(id = item.icon), item.label) },
-                        label = { Text(text = item.label) }
+                        icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
+                        label = { Text(text = navItem.label) }
                     )
                 }
             }
         }
     ){ paddingValues ->
-        NavHost(
-            navController = navController,
-            modifier = Modifier.padding(paddingValues),
-            startDestination = "home"
-        ){
-            composable(
-                route = "home",
-                enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
-                exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
-                content = { HomeScreen() }
-            )
-            composable(
-                route = "profile",
-                enterTransition = { navEnterTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
-                exitTransition = { navExitTransition(direction = DIRECTION_RIGHT, orientation = orientation) },
-                content = { firebaseManager?.let{ ProfilePage(firebaseManager = it) } }
-            )
+        if(usePager){
+            HorizontalPager(
+                modifier = Modifier
+                    .padding(paddingValues),
+                state = pagerState,
+                beyondBoundsPageCount = 1
+            ) {page ->
+                navigationItems[page].getContent(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            val pageOffset = (
+                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                    ).absoluteValue
+                            alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
+
+                            val factor = .5f
+                            val direction = (if(page % 2 == 0) 1f else -1f)
+                            val easeFraction = if(page % 2 == 0) pageOffset else 1-pageOffset
+                            val offsetDerivedFromProgress = EaseInCirc.transform(pageOffset) * screenWidth
+                            val completePageOffset = screenWidth * direction * pageOffset
+                            val calculatedOffset = factor * offsetDerivedFromProgress * direction * pageOffset
+                            translationX = completePageOffset - direction * offsetDerivedFromProgress
+                        }
+                )()
+            }
+        }else {
+            NavHost(
+                navController = navController,
+                modifier = Modifier.padding(paddingValues),
+                startDestination = "home"
+            ) {
+                composable(
+                    route = "home",
+                    enterTransition = {
+                        navEnterTransition(
+                            direction = DIRECTION_LEFT,
+                            orientation = orientation
+                        )
+                    },
+                    exitTransition = {
+                        navExitTransition(
+                            direction = DIRECTION_LEFT,
+                            orientation = orientation
+                        )
+                    },
+                    content = { HomeScreen() }
+                )
+                composable(
+                    route = "profile",
+                    enterTransition = {
+                        navEnterTransition(
+                            direction = DIRECTION_RIGHT,
+                            orientation = orientation
+                        )
+                    },
+                    exitTransition = {
+                        navExitTransition(
+                            direction = DIRECTION_RIGHT,
+                            orientation = orientation
+                        )
+                    },
+                    content = { firebaseManager?.let { ProfilePage(firebaseManager = it) } }
+                )
+            }
         }
     }
 }
