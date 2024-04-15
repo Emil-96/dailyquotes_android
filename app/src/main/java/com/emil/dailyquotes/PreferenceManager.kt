@@ -87,10 +87,12 @@ class PreferenceManager(
                 if (savedDate == LocalDate.now().toString()) {
                     savedQuote?.let { jsonQuote ->
                         val parsedQuote = parseQuote(jsonQuote)
-                        if(parsedQuote == null){
+                        parsedQuote?.let {
+                            _quote.postValue(it)
+                        }?:{
+                            Log.e("PreferenceManager", "Error parsing stored daily quote")
                             mainActivity?.showError("Error loading the daily quote")
                         }
-                        _quote.postValue(parseQuote(jsonQuote))
                     }
                 } else {
                     firebaseManager.getRandomQuote { fetchedQuote ->
