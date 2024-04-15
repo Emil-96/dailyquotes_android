@@ -116,14 +116,18 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         mainActivity = this
-        firebaseManager = FirebaseManager(this)
-        preferenceManager = PreferenceManager()
         quoteDatabase = Room.databaseBuilder(
             applicationContext,
             QuoteDatabase::class.java, "quotes-database"
         )
             .allowMainThreadQueries()
             .build()
+
+        firebaseManager = FirebaseManager(this) {
+            preferenceManager = PreferenceManager()
+            Log.d("MainActivity", "Trying to load daily quote")
+            preferenceManager?.loadDailyQuote()
+        }
 
         registerCsvLauncher()
 
