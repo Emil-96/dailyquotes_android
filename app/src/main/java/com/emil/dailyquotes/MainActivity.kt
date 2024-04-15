@@ -1,5 +1,6 @@
 package com.emil.dailyquotes
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -358,6 +359,7 @@ class MainActivity : ComponentActivity() {
      *
      * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
      */
+    @SuppressLint("RestrictedApi")
     private fun getNavExitDirection(initialDestination: NavDestination): Int{
 
         val currentBackStack = pageNavController.currentBackStack.value
