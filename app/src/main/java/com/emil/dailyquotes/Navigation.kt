@@ -27,7 +27,7 @@ fun getNavigationDestinations(firebaseManager: FirebaseManager): List<Navigation
     return listOf(
         NavigationDestination(
             navItem = BottomNavigationItem.HomeScreenItem,
-            content = { HomeScreen() }
+            content = { HomeScreen(firebaseManager = firebaseManager) }
         ),
         NavigationDestination(
             navItem = BottomNavigationItem.ProfileScreenItem,

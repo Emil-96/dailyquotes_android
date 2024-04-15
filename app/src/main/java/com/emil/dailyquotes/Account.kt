@@ -18,10 +18,10 @@ import androidx.compose.ui.unit.dp
  *
  * @param modifier A [Modifier] to adjust the content.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountPage(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
 ){
     Scaffold(
         modifier = modifier,
@@ -38,7 +38,7 @@ fun AccountPage(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
                 onClick = {
-                    firebaseManager?.logOut(onSuccess = { mainActivity?.back()})
+                    firebaseManager.logOut(onSuccess = { mainActivity?.back()})
                 }
             ) {
                 Text(text = "Log out")

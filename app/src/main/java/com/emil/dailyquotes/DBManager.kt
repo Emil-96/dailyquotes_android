@@ -49,7 +49,9 @@ import java.io.InputStreamReader
  *
  * Should only be used by administrators.
  */
-class DBManager: ViewModel(){
+class DBManager(
+    private val firebaseManager: FirebaseManager
+): ViewModel(){
 
     private val _importedLines: MutableLiveData<List<Quote>> = MutableLiveData()
     val importedLines: LiveData<List<Quote>> = _importedLines
@@ -86,7 +88,7 @@ class DBManager: ViewModel(){
      */
     fun uploadCsvElements(onSuccess: () -> Unit){
         importedLines.value?.let {
-            firebaseManager?.uploadCsvElements(
+            firebaseManager.uploadCsvElements(
                 elements = it,
                 onSuccess = onSuccess
             )

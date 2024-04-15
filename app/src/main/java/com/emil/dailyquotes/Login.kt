@@ -39,7 +39,8 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun LoginPage(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
 ){
 
     var login by remember { mutableStateOf(true) }
@@ -133,13 +134,13 @@ fun LoginPage(
                         onClick = {
                             clicked = true
                             if(login){
-                                firebaseManager?.logIn(
+                                firebaseManager.logIn(
                                     email = email,
                                     password = password,
                                     onSuccess = { mainActivity?.back() }
                                 )
                             }else{
-                                firebaseManager?.register(
+                                firebaseManager.register(
                                     name = name,
                                     email = email,
                                     password = password,

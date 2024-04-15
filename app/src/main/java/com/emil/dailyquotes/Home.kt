@@ -40,10 +40,13 @@ import java.util.Date
  * @param modifier A [Modifier] to adjust the content.
  */
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier){
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
+){
 
     val quote = preferenceManager?.quote?.observeAsState()
-    val name = firebaseManager?.getName()?.observeAsState()
+    val name = firebaseManager.getName().observeAsState()
 
     val showPlaceholder = quote?.value?.quote?.isEmpty() ?: true
 
@@ -52,11 +55,11 @@ fun HomeScreen(modifier: Modifier = Modifier){
     val currentHours = Date().hours
 
     val greeting = if(currentHours <= 11) {
-        "Good morning ${name?.value}"
+        "Good morning ${name.value}"
     }else if(currentHours >= 16) {
-        "Good evening ${name?.value}"
+        "Good evening ${name.value}"
     }else{
-        "Hello ${name?.value}"
+        "Hello ${name.value}"
     }
 
     Column(

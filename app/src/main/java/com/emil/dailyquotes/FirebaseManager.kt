@@ -25,7 +25,7 @@ private val EMAIL_KEY = "firebase_email"
  *
  * @param context A context object required to save certain things locally.
  */
-class FirebaseManager(private val context: Context, private val onIsReady: () -> Unit){
+class FirebaseManager(private val context: Context, private val onIsReady: (FirebaseManager) -> Unit){
     private val auth = Firebase.auth
     private val db = Firebase.firestore
 
@@ -49,7 +49,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: () ->
             localDatabaseSize = quoteDao?.getAll()?.size ?: 0
             Log.d("FirebaseManager", "Found $localDatabaseSize elements in local database")
             log("Executing onIsReady function")
-            onIsReady()
+            onIsReady(this@FirebaseManager)
             context.dataStore.data
                 .collect { preferences ->
                     _name.postValue(preferences[stringPreferencesKey(NAME_KEY)] ?: "")

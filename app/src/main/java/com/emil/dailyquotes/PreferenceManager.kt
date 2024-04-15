@@ -20,7 +20,9 @@ const val PREFERENCE_KEY_VERSION = "database_version"
 /**
  * A class to handle all interaction with the local storage.
  */
-class PreferenceManager{
+class PreferenceManager(
+    private val firebaseManager: FirebaseManager
+){
 
     private var _quote: MutableLiveData<Quote> = MutableLiveData()
     val quote: LiveData<Quote> = _quote
@@ -32,7 +34,7 @@ class PreferenceManager{
      */
     init {
         loadInfo {
-            firebaseManager?.loadInfo()
+            firebaseManager.loadInfo()
         }
     }
 
@@ -84,10 +86,14 @@ class PreferenceManager{
 
                 if (savedDate == LocalDate.now().toString()) {
                     savedQuote?.let { jsonQuote ->
+                        val parsedQuote = parseQuote(jsonQuote)
+                        if(parsedQuote == null){
+                            mainActivity?.showError("Error loading the daily quote")
+                        }
                         _quote.postValue(parseQuote(jsonQuote))
                     }
                 } else {
-                    firebaseManager?.getRandomQuote { fetchedQuote ->
+                    firebaseManager.getRandomQuote { fetchedQuote ->
                         _quote.postValue(fetchedQuote)
                         mainActivity?.lifecycleScope?.launch {
                             saveDailyQuote(fetchedQuote)

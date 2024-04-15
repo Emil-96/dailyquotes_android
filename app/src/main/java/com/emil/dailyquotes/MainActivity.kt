@@ -87,7 +87,6 @@ private val DIRECTION_LEFT = -1
 private val DIRECTION_RIGHT = 1
 
 var mainActivity: MainActivity? = null
-var firebaseManager: FirebaseManager? = null
 var preferenceManager: PreferenceManager? = null
 var quoteDatabase: QuoteDatabase? = null
 
@@ -109,8 +108,6 @@ class MainActivity : ComponentActivity() {
     private var composableCoroutineScope: CoroutineScope? = null
     private lateinit var callback: OnBackPressedCallback
 
-    private val dbManager = DBManager()
-
     /**
      * Gets called when the UI gets created.
      * It is the entry point for all UI action.
@@ -128,13 +125,15 @@ class MainActivity : ComponentActivity() {
             .allowMainThreadQueries()
             .build()
 
-        firebaseManager = FirebaseManager(this) {
-            preferenceManager = PreferenceManager()
+        val firebaseManager = FirebaseManager(this) {
+            preferenceManager = PreferenceManager(it)
             Log.d("MainActivity", "Trying to load daily quote")
             preferenceManager?.loadDailyQuote()
         }
 
-        registerCsvLauncher()
+        val dbManager = DBManager(firebaseManager)
+
+        registerCsvLauncher(dbManager)
 
         setContent {
 
@@ -147,9 +146,9 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     if(USE_PAGER_EXPERIMENTAL){
-                        NavigationPager()
+                        NavigationPager(firebaseManager)
                     }else{
-                        NavigationHost()
+                        NavigationHost(firebaseManager, dbManager)
                     }
 
                 }
@@ -165,7 +164,9 @@ class MainActivity : ComponentActivity() {
      */
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun NavigationPager(){
+    fun NavigationPager(
+        firebaseManager: FirebaseManager
+    ){
 
         val pagerPages = remember { pages }
 
@@ -189,8 +190,7 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun handleOnBackPressed() {
-                if(pages.size == 1){
-                }else {
+                if(pages.size >= 1){
                     progress = 0f
                     userInputEnabled = false
                     back()
@@ -249,16 +249,25 @@ class MainActivity : ComponentActivity() {
                 .offset(x = offset.dp)
             when(pagerPages[page]){
                 "home" -> {
-                    HomePage(modifier = pageModifier)
+                    HomePage(
+                        modifier = pageModifier,
+                        firebaseManager = firebaseManager
+                    )
                 }
                 "settings" -> {
                     SettingsPage(modifier = pageModifier)
                 }
                 "account" -> {
-                    AccountPage(modifier = pageModifier)
+                    AccountPage(
+                        modifier = pageModifier,
+                        firebaseManager = firebaseManager
+                    )
                 }
                 "login" -> {
-                    LoginPage(modifier = pageModifier)
+                    LoginPage(
+                        modifier = pageModifier,
+                        firebaseManager = firebaseManager
+                    )
                 }
             }
         }
@@ -277,7 +286,10 @@ class MainActivity : ComponentActivity() {
      * In [onCreate] the constant [USE_PAGER_EXPERIMENTAL] determines if this or the [HorizontalPager] in [NavigationPager] gets used.
      */
     @Composable
-    fun NavigationHost(){
+    fun NavigationHost(
+        firebaseManager: FirebaseManager,
+        dbManager: DBManager
+    ){
 
         pageNavController = rememberNavController()
         currentPage = currentRoute(navController = pageNavController)
@@ -291,7 +303,7 @@ class MainActivity : ComponentActivity() {
                 route = "home",
                 enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
                 exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
-                content = { HomePage() }
+                content = { HomePage(firebaseManager = firebaseManager) }
             )
             composable(
                 route = "settings",
@@ -311,7 +323,7 @@ class MainActivity : ComponentActivity() {
                 exitTransition = { navExitTransition(
                     direction = getNavExitDirection(initialState.destination),
                     orientation = orientation) },
-                content = { LoginPage() }
+                content = { LoginPage(firebaseManager = firebaseManager) }
             )
             composable(
                 route = "account",
@@ -321,7 +333,7 @@ class MainActivity : ComponentActivity() {
                 exitTransition = { navExitTransition(
                     direction = getNavExitDirection(initialState.destination),
                     orientation = orientation) },
-                content = { AccountPage() }
+                content = { AccountPage(firebaseManager = firebaseManager) }
             )
             composable(
                 route = "db_manager",
@@ -414,7 +426,7 @@ class MainActivity : ComponentActivity() {
      *
      * This method is supposed to only be used by administrators.
      */
-    private fun registerCsvLauncher(){
+    private fun registerCsvLauncher(dbManager: DBManager){
         csvImportLauncher = mainActivity?.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
             if(result.resultCode == Activity.RESULT_OK){
                 val data: Intent? = result.data
@@ -423,6 +435,12 @@ class MainActivity : ComponentActivity() {
                 } ?: Log.e("FileImport", "Failed to retrieve URI from Intent")
             }
         }
+    }
+
+    fun showError(
+        message: String
+    ){
+        // TODO: Show a toast to the user with the error message.
     }
 }
 
@@ -435,13 +453,11 @@ class MainActivity : ComponentActivity() {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomePage(modifier: Modifier = Modifier){
-
-    if(firebaseManager == null){
-        return
-    }
-
-    val navigationItems = getNavigationDestinations(firebaseManager!!)
+fun HomePage(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
+){
+    val navigationItems = getNavigationDestinations(firebaseManager)
 
     val usePager = true
 
@@ -531,7 +547,7 @@ fun HomePage(modifier: Modifier = Modifier){
                             orientation = orientation
                         )
                     },
-                    content = { HomeScreen() }
+                    content = { HomeScreen(firebaseManager = firebaseManager) }
                 )
                 composable(
                     route = "profile",
@@ -547,7 +563,7 @@ fun HomePage(modifier: Modifier = Modifier){
                             orientation = orientation
                         )
                     },
-                    content = { firebaseManager?.let { ProfilePage(firebaseManager = it) } }
+                    content = { ProfilePage(firebaseManager = firebaseManager) }
                 )
             }
         }
