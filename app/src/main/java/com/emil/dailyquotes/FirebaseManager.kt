@@ -343,14 +343,15 @@ class FirebaseManager(private val context: Context, private val onIsReady: () ->
     fun getRandomQuote(getQuote: (Quote) -> Unit){
 
         if(localDatabaseSize != 0){
-            getRandomQuoteFromLocalDatabase(getQuote)
             log("retrieving random quote from local db")
+            getRandomQuoteFromLocalDatabase(getQuote)
             return
         }
 
+        log("retrieving random quote after downloading all quotes")
+
         loadAllQuotes(onSuccess = {
             getRandomQuoteFromLocalDatabase(getQuote)
-            log("retrieving random quote after downloading all quotes")
         })
 
     }
@@ -365,7 +366,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: () ->
     private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit){
         mainActivity?.lifecycleScope?.launch {
             quoteDao?.getAll().also {
-                log("getAll() returns $it")
+                //log("getAll() returns $it")
                 it?.let { quotes ->
                     val randomIndex = Random.nextInt(quotes.size)
                     getQuote(quotes[randomIndex])
