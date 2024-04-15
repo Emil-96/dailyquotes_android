@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,7 +14,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -227,7 +225,6 @@ fun SignUpFields(
  * @param name The name of the user.
  * @param setName The method to be called when the name text changes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NameField(
     name: String,
@@ -250,7 +247,6 @@ fun NameField(
  * @param email The email address of the user.
  * @param setEmail The method to be called when the email text changes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmailField(
     email: String,
@@ -274,7 +270,6 @@ fun EmailField(
  * @param password The password of the user.
  * @param setPassword The method to be called when the password text changes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordField(
     isConfirm: Boolean = false,

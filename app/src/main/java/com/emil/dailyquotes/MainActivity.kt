@@ -11,7 +11,6 @@ import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -27,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -69,11 +67,6 @@ import com.emil.dailyquotes.room.QuoteDatabase
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
-import java.io.IOException
-import java.io.InputStreamReader
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
@@ -81,10 +74,10 @@ import kotlin.math.pow
  * This is the main entry point for the application.
  */
 
-private val USE_PAGER_EXPERIMENTAL = false
+private const val USE_PAGER_EXPERIMENTAL = false
 
-private val DIRECTION_LEFT = -1
-private val DIRECTION_RIGHT = 1
+private const val DIRECTION_LEFT = -1
+private const val DIRECTION_RIGHT = 1
 
 var mainActivity: MainActivity? = null
 var preferenceManager: PreferenceManager? = null
@@ -177,10 +170,6 @@ class MainActivity : ComponentActivity() {
 
         callback = object : OnBackPressedCallback(enabled = false){
 
-            override fun handleOnBackStarted(backEvent: BackEventCompat) {
-                super.handleOnBackStarted(backEvent)
-            }
-
             override fun handleOnBackProgressed(backEvent: BackEventCompat) {
                 if(pages.size == 1){
                     super.handleOnBackProgressed(backEvent)
@@ -255,7 +244,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 "settings" -> {
-                    SettingsPage(modifier = pageModifier)
+                    SettingsPage(
+                        modifier = pageModifier,
+                        firebaseManager = firebaseManager
+                    )
                 }
                 "account" -> {
                     AccountPage(
@@ -313,7 +305,7 @@ class MainActivity : ComponentActivity() {
                 exitTransition = { navExitTransition(
                     direction = getNavExitDirection(initialState.destination),
                     orientation = orientation) },
-                content = { SettingsPage() }
+                content = { SettingsPage(firebaseManager = firebaseManager) }
             )
             composable(
                 route = "login",
@@ -411,7 +403,6 @@ class MainActivity : ComponentActivity() {
     /**
      * Public method to quickly navigate back to the previous destination.
      */
-    @OptIn(ExperimentalFoundationApi::class)
     fun back(){
         Log.d("MainActivity", "going back")
         pageNavController.popBackStack()
@@ -517,12 +508,9 @@ fun HomePage(
                                     ).absoluteValue
                             alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
 
-                            val factor = .5f
                             val direction = (if(page % 2 == 0) 1f else -1f)
-                            val easeFraction = if(page % 2 == 0) pageOffset else 1-pageOffset
                             val offsetDerivedFromProgress = EaseInCirc.transform(pageOffset) * screenWidth
                             val completePageOffset = screenWidth * direction * pageOffset
-                            val calculatedOffset = factor * offsetDerivedFromProgress * direction * pageOffset
                             translationX = completePageOffset - direction * offsetDerivedFromProgress
                         }
                 )()

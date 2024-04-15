@@ -13,16 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -33,8 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -49,11 +43,13 @@ const val DIALOG_CONTENT = 3
  *
  * @param modifier A [Modifier] to adjust the content.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsPage(modifier: Modifier = Modifier){
+fun SettingsPage(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager
+){
 
-    var dialogOptions by remember{ mutableStateOf(DialogOptions()) }
+    val dialogOptions by remember{ mutableStateOf(DialogOptions()) }
     var dialogVisibility by remember { mutableIntStateOf(DIALOG_HIDDEN) }
 
     if(dialogVisibility != DIALOG_HIDDEN) {
@@ -75,7 +71,7 @@ fun SettingsPage(modifier: Modifier = Modifier){
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
         ) {
-            if(firebaseManager?.getCurrentUser() == null) {
+            if(firebaseManager.getCurrentUser() == null) {
                 Setting(
                     title = "Account",
                     description = "Log in to synchronise your content",
@@ -94,7 +90,7 @@ fun SettingsPage(modifier: Modifier = Modifier){
                     }
                 )
             }
-            if(firebaseManager?.isAdmin() == true){
+            if(firebaseManager.isAdmin()){
                 Setting(
                     title = "Manage Data",
                     description = "Add and remove entries in the database",
@@ -199,7 +195,7 @@ private fun Dialog(
                         Text(text = text)
                     }
                     DIALOG_OPTIONS -> {
-                        Column() {
+                        Column {
                             for(option in options){
                                 MultipleChoiceOption(
                                     title = option.value.title,

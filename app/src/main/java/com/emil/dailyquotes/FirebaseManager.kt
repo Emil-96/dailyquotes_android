@@ -17,8 +17,8 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-private val NAME_KEY = "firebase_display_name"
-private val EMAIL_KEY = "firebase_email"
+private const val NAME_KEY = "firebase_display_name"
+private const val EMAIL_KEY = "firebase_email"
 
 /**
  * A class to handle all interaction with the remote backend.

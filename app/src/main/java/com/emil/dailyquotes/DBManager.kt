@@ -15,10 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -38,7 +37,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.emil.dailyquotes.room.Quote
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.gson.Gson
 import java.io.BufferedReader
 import java.io.IOException
@@ -102,7 +100,6 @@ class DBManager(
  *
  * @param dbManager The database manager to act as an interface.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DBManagerPage(dbManager: DBManager){
 
@@ -217,7 +214,7 @@ private fun CsvListItem(element: Quote){
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ){
         CsvListItemText(modifier = Modifier.width(86.dp), string = element.category)
-        Divider(
+        HorizontalDivider(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(2.dp)
