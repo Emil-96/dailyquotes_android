@@ -42,9 +42,7 @@ import java.util.Date
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier){
 
-    preferenceManager?.loadDailyQuote()
-
-    val quote : State<Quote?>? = preferenceManager?.quote?.observeAsState()
+    val quote = preferenceManager?.quote?.observeAsState()
     val name = firebaseManager?.getName()?.observeAsState()
 
     val showPlaceholder = quote?.value?.quote?.isEmpty() ?: true
