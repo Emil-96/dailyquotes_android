@@ -3,6 +3,7 @@ package com.emil.dailyquotes
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CreatePasswordRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetPasswordOption
@@ -112,14 +114,19 @@ fun LoginPage(
                 firebaseManager.logIn(
                     email = email,
                     password = password,
-                    onSuccess = { mainActivity?.backTo(ROUTE_SETTINGS) },
+                    onSuccess = {
+                        registerPassword(context, email, password)
+                        mainActivity?.backTo(ROUTE_SETTINGS) },
                 )
             } else {
                 firebaseManager.register(
                     name = name,
                     email = email,
                     password = password,
-                    onSuccess = { mainActivity?.backTo(ROUTE_SETTINGS) }
+                    onSuccess = {
+                        registerPassword(context, email, password)
+                        mainActivity?.backTo(ROUTE_SETTINGS)
+                    }
                 )
             }
         }
@@ -135,11 +142,12 @@ fun LoginPage(
                 password = it
             },
             onDone = {
+                mainActivity?.navigateTo(ROUTE_LOADING)
                 firebaseManager.logIn(
                     email = email,
                     password = password,
                     onSuccess = {
-                        mainActivity?.back()
+                        mainActivity?.backTo(ROUTE_SETTINGS)
                     }
                 )
             }
@@ -199,7 +207,7 @@ fun LoginPage(
                         focusManager = focusManager,
                         autofillNode = emailAutofillNode,
                         onFocus = {
-                            if (login) {
+                            if (email == "" && password == "" && login) {
                                 onLoginFocus()
                             }
                         }
@@ -214,7 +222,7 @@ fun LoginPage(
                         focusManager = focusManager,
                         autofillNode = if (login) passwordAutofillNode else newPasswordAutofillNode,
                         onFocus = {
-                            if (login) {
+                            if (password == "" && email == "" && login) {
                                 onLoginFocus()
                             }
                         },
@@ -253,7 +261,9 @@ fun LoginPage(
                             finish()
                         }
                     ) {
-                        Text(text = if (login) "Log in" else "Sign up")
+                        AnimatedContent(targetState = login, label = "change button label") {
+                            Text(text = if (it) "Log in" else "Sign up")
+                        }
                     }
                 }
             }
@@ -292,6 +302,29 @@ private fun tryGoogleLogin(
         }
     }
 
+}
+
+private fun registerPassword(
+    context: Context,
+    email: String,
+    password: String
+){
+    val credentialManager = CredentialManager.create(context)
+
+    val createPasswordRequest = CreatePasswordRequest(
+        id = email, password = password
+    )
+
+    mainActivity?.lifecycleScope?.launch {
+        try {
+            val result = credentialManager.createCredential(
+                context,
+                createPasswordRequest
+            )
+        }catch (e: Exception){
+            Log.d("Login", "Caught error after registering password with Google: $e")
+        }
+    }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -356,6 +389,7 @@ private fun TextField(
                 autofillNode.boundingBox = it.boundsInWindow()
             }
             .onFocusChanged { focusState ->
+                /*
                 autofill?.run {
                     if (focusState.isFocused) {
                         requestAutofillForNode(autofillNode)
@@ -363,6 +397,7 @@ private fun TextField(
                         cancelAutofillForNode(autofillNode)
                     }
                 }
+                */
 
                 if (focusState.isFocused) {
                     onFocus()
