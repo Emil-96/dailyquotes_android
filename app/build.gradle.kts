@@ -59,6 +59,10 @@ dependencies {
 
     implementation("com.google.accompanist:accompanist-placeholder-material:0.32.0")
 
+    implementation("com.google.android.gms:play-services-auth:21.1.0")
+
+    implementation("androidx.credentials:credentials:1.3.0-alpha02")
+
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
