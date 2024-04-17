@@ -307,47 +307,25 @@ class MainActivity : ComponentActivity() {
                 exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
                 content = { HomePage(firebaseManager = firebaseManager) }
             )
-            composable(
-                route = "settings",
-                enterTransition = { navEnterTransition(
-                    direction = getNavEnterDirection(initialState.destination),
-                    orientation = orientation) },
-                exitTransition = { navExitTransition(
-                    direction = getNavExitDirection(initialState.destination),
-                    orientation = orientation) },
-                content = { SettingsPage(firebaseManager = firebaseManager) }
-            )
-            composable(
-                route = "login",
-                enterTransition = { navEnterTransition(
-                    direction = getNavEnterDirection(initialState.destination),
-                    orientation = orientation) },
-                exitTransition = { navExitTransition(
-                    direction = getNavExitDirection(initialState.destination),
-                    orientation = orientation) },
-                content = { LoginPage(firebaseManager = firebaseManager) }
-            )
-            composable(
-                route = "account",
-                enterTransition = { navEnterTransition(
-                    direction = getNavEnterDirection(initialState.destination),
-                    orientation = orientation) },
-                exitTransition = { navExitTransition(
-                    direction = getNavExitDirection(initialState.destination),
-                    orientation = orientation) },
-                content = { AccountPage(firebaseManager = firebaseManager) }
-            )
-            composable(
-                route = "db_manager",
-                enterTransition = { navEnterTransition(
-                    direction = getNavEnterDirection(initialState.destination),
-                    orientation = orientation) },
-                exitTransition = { navExitTransition(
-                    direction = getNavExitDirection(initialState.destination),
-                    orientation = orientation) },
-                content = { DBManagerPage(dbManager) }
-            )
+            getNavDestination(this, orientation, ROUTE_SETTINGS) { SettingsPage(firebaseManager = firebaseManager) }
+            getNavDestination(this, orientation, ROUTE_LOGIN) { LoginPage(firebaseManager = firebaseManager, context = this@MainActivity) }
+            getNavDestination(this, orientation, ROUTE_ACCOUNT) { AccountPage(firebaseManager = firebaseManager) }
+            getNavDestination(this, orientation, ROUTE_DBMANAGER) { DBManagerPage(dbManager = dbManager) }
+            getNavDestination(this, orientation, ROUTE_LOADING) { LoadingScreen() }
         }
+    }
+
+    private fun getNavDestination(navGraphBuilder: NavGraphBuilder, orientation: Int, route: String, destination: @Composable()() -> Unit): Unit{
+        return navGraphBuilder.composable(
+            route = route,
+            enterTransition = { navEnterTransition(
+                direction = getNavEnterDirection(initialState.destination),
+                orientation = orientation) },
+            exitTransition = { navExitTransition(
+                direction = getNavExitDirection(initialState.destination),
+                orientation = orientation) },
+            content = { destination() }
+        )
     }
 
     /**
