@@ -90,7 +90,7 @@ class PreferenceManager(
                             _quote.postValue(it)
                         }?:{
                             Log.e("PreferenceManager", "Error parsing stored daily quote")
-                            mainActivity?.showError("Error loading the daily quote")
+                            mainActivity?.showMessage("Error loading the daily quote")
                         }
                     }
                 } else {

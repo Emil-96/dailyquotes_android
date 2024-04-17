@@ -423,9 +423,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun showError(
-        message: String
-    ){
+    fun showMessage(
+        message: String,
+        isError: Boolean = false
+    ) {
         // TODO: Show a toast to the user with the error message.
     }
 }
