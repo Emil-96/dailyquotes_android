@@ -32,14 +32,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.AutofillNode
+import androidx.compose.ui.autofill.AutofillType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalAutofill
+import androidx.compose.ui.platform.LocalAutofillTree
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
 /**
@@ -47,7 +56,10 @@ import androidx.compose.ui.unit.dp
  *
  * @param modifier A [Modifier] to adjust the content.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 fun LoginPage(
     modifier: Modifier = Modifier,
@@ -62,12 +74,30 @@ fun LoginPage(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    val finishedEnabled = email.isNotEmpty() && password.isNotEmpty() && (login || password == confirmPassword)
+    val finishedEnabled =
+        email.isNotEmpty() && password.isNotEmpty() && (login || password == confirmPassword)
 
     val focusManager = LocalFocusManager.current
 
+    val nameAutofillNode = createAutofillNode(AutofillType.PersonFirstName) { name = it }
+    val emailAutofillNode = createAutofillNode(AutofillType.EmailAddress) { email = it }
+    val passwordAutofillNode = createAutofillNode(AutofillType.Password) { password = it }
+    val newPasswordAutofillNode = createAutofillNode(AutofillType.NewPassword) {
+        password = it
+        confirmPassword = it
+    }
+
+    if (login) {
+        LocalAutofillTree.current += emailAutofillNode
+        LocalAutofillTree.current += passwordAutofillNode
+    } else {
+        LocalAutofillTree.current += nameAutofillNode
+        LocalAutofillTree.current += emailAutofillNode
+        LocalAutofillTree.current += newPasswordAutofillNode
+    }
+
     val finish = {
-        if(finishedEnabled) {
+        if (finishedEnabled) {
             clicked = true
             if (login) {
                 firebaseManager.logIn(
@@ -122,32 +152,49 @@ fun LoginPage(
                     modifier = modifier.padding(vertical = 16.dp, horizontal = 24.dp)
                 ) {
                     AnimatedVisibility(visible = !login) {
-                        NameField(
-                            name = name,
-                            setName = { name = it },
-                            focusManager = focusManager
+                        TextField(
+                            label = "Name",
+                            text = name,
+                            setText = { name = it },
+                            capitalization = KeyboardCapitalization.Words,
+                            focusManager = focusManager,
+                            autofillNode = nameAutofillNode
                         )
                     }
-                    EmailField(
-                        email = email,
-                        setEmail = { email = it },
-                        focusManager = focusManager
+                    TextField(
+                        label = "Email",
+                        text = email,
+                        setText = { email = it },
+                        keyboardType = KeyboardType.Email,
+                        focusManager = focusManager,
+                        autofillNode = emailAutofillNode
                     )
-                    PasswordField(
+                    TextField(
+                        label = "Password",
+                        text = password,
+                        setText = { password = it },
+                        isPassword = true,
+                        keyboardType = KeyboardType.Password,
                         isFinal = login,
-                        onDone = { finish() },
-                        password = password,
-                        setPassword = { password = it },
-                        focusManager = focusManager
+                        focusManager = focusManager,
+                        autofillNode = if (login) passwordAutofillNode else newPasswordAutofillNode,
+                        onDone = {
+                            finish()
+                        }
                     )
                     AnimatedVisibility(visible = !login) {
-                        PasswordField(
-                            isConfirm = true,
+                        TextField(
+                            label = "Confirm password",
+                            text = confirmPassword,
+                            setText = { confirmPassword = it },
+                            isPassword = true,
+                            keyboardType = KeyboardType.Password,
                             isFinal = true,
-                            onDone = { finish() },
-                            password = confirmPassword,
-                            setPassword = { confirmPassword = it },
-                            focusManager = focusManager
+                            focusManager = focusManager,
+                            autofillNode = newPasswordAutofillNode,
+                            onDone = {
+                                finish()
+                            }
                         )
                     }
                 }
@@ -182,6 +229,19 @@ fun LoginPage(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+private fun createAutofillNode(
+    type: AutofillType,
+    onFill: (String) -> Unit
+): AutofillNode {
+    return AutofillNode(
+        autofillTypes = listOf(type),
+        onFill = {
+            onFill(it)
+        }
+    )
+}
+
 @Composable
 private fun TabTitle(
     text: String,
@@ -206,92 +266,46 @@ private fun TabTitle(
     }
 }
 
-/**
- * Returns the field to enter the name.
- *
- * @param name The name of the user.
- * @param setName The method to be called when the name text changes.
- */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun NameField(
-    name: String,
-    setName: (String) -> Unit,
-    focusManager: FocusManager
-) {
-    OutlinedTextField(
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        value = name,
-        onValueChange = { setName(it) },
-        label = { Text(text = "Display name") },
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Words,
-            imeAction = ImeAction.Next
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = {
-                focusManager.moveFocus(FocusDirection.Down)
-            }
-        )
-    )
-}
+private fun TextField(
+    label: String,
+    text: String,
+    setText: (String) -> Unit,
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    capitalization: KeyboardCapitalization = KeyboardOptions.Default.capitalization,
+    isFinal: Boolean = false,
+    focusManager: FocusManager,
+    autofillNode: AutofillNode,
+    onDone: () -> Unit = {}
+){
+    val autofill = LocalAutofill.current
 
-/**
- * Returns the field to enter the email address.
- *
- * @param email The email address of the user.
- * @param setEmail The method to be called when the email text changes.
- */
-@Composable
-fun EmailField(
-    email: String,
-    setEmail: (String) -> Unit,
-    focusManager: FocusManager
-) {
     OutlinedTextField(
         singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        value = email,
-        onValueChange = { setEmail(it) },
-        label = { Text(text = "E-Mail") },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Email,
-            imeAction = ImeAction.Next
-        ),
-        keyboardActions = KeyboardActions(
-            onNext = {
-                focusManager.moveFocus(FocusDirection.Down)
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned {
+                autofillNode.boundingBox = it.boundsInWindow()
             }
-        )
-    )
-}
-
-/**
- * Returns the field to enter the password.
- *
- * @param isConfirm Whether the password field is describing the confirmation password.
- * @param password The password of the user.
- * @param setPassword The method to be called when the password text changes.
- */
-@Composable
-fun PasswordField(
-    isConfirm: Boolean = false,
-    isFinal: Boolean,
-    onDone: () -> Unit = {},
-    password: String,
-    setPassword: (String) -> Unit,
-    focusManager: FocusManager
-) {
-    OutlinedTextField(
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        value = password,
-        onValueChange = { setPassword(it) },
-        label = { Text(text = if (!isConfirm) "Password" else "Confirm password") },
-        visualTransformation = PasswordVisualTransformation(),
+            .onFocusChanged { focusState ->
+                autofill?.run {
+                    if (focusState.isFocused) {
+                        requestAutofillForNode(autofillNode)
+                    } else {
+                        cancelAutofillForNode(autofillNode)
+                    }
+                }
+            },
+        value = text,
+        onValueChange = { setText(it) },
+        label = { Text(text = label) },
+        visualTransformation = if(isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = if(isFinal) ImeAction.Done else ImeAction.Next
+            capitalization = capitalization,
+            keyboardType = keyboardType,
+            imeAction = if (isFinal) ImeAction.Done else ImeAction.Next
         ),
         keyboardActions = KeyboardActions(
             onNext = {
@@ -300,6 +314,6 @@ fun PasswordField(
             onDone = {
                 onDone()
             }
-        )
+        ),
     )
 }
