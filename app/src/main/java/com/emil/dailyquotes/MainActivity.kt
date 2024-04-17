@@ -69,13 +69,13 @@ import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
-import kotlin.math.pow
 
 /**
  * This is the main entry point for the application.
  */
 
 private const val USE_PAGER_EXPERIMENTAL = false
+private const val USE_BACK_PROGRESS_EXPERIMENTAL = false
 
 private const val DIRECTION_LEFT = -1
 private const val DIRECTION_RIGHT = 1
@@ -104,10 +104,13 @@ class MainActivity : ComponentActivity() {
     private var currentPage: String? = null
 
     private var pages = mutableStateListOf("home")
+
     @OptIn(ExperimentalFoundationApi::class)
     private lateinit var pagerState: PagerState
     private var composableCoroutineScope: CoroutineScope? = null
     private lateinit var callback: OnBackPressedCallback
+
+    private var onBack: (() -> Unit)? = null
 
     /**
      * Gets called when the UI gets created.
@@ -140,16 +143,51 @@ class MainActivity : ComponentActivity() {
 
             window.decorView.setBackgroundColor(MaterialTheme.colorScheme.background.toArgb())
 
+            /*
+            var backProgress by remember { mutableFloatStateOf(0f) }
+
+            val backProgressAnimated: Float by animateFloatAsState(
+                targetValue = backProgress,
+                label = ""
+            )
+
+            val backProgressOption = if (USE_BACK_PROGRESS_EXPERIMENTAL) {
+                backProgressAnimated
+            } else {
+                0f
+            }
+             */
+
+            callback = object : OnBackPressedCallback(enabled = true) {
+                override fun handleOnBackPressed() {
+                    onBack?.let { it() }
+                    //backProgress = 0f
+                }
+
+                override fun handleOnBackProgressed(backEvent: BackEventCompat) {
+                    //backProgress = backEvent.progress
+                }
+
+                override fun handleOnBackCancelled() {
+                    //backProgress = 0f
+                }
+            }
+
+            onBackPressedDispatcher.addCallback(callback)
+
             DailyQuotesTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
 
-                    if(USE_PAGER_EXPERIMENTAL){
+                    if (USE_PAGER_EXPERIMENTAL) {
                         NavigationPager(firebaseManager)
-                    }else{
-                        NavigationHost(firebaseManager, dbManager)
+                    } else {
+                        NavigationHost(
+                            firebaseManager,
+                            dbManager,
+                        )
                     }
 
                 }
@@ -167,9 +205,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun NavigationPager(
         firebaseManager: FirebaseManager
-    ){
-        // TODO: Add back callback
-
+    ) {
         val pagerPages = remember { pages }
 
         var userInputEnabled by remember { mutableStateOf(true) }
@@ -177,18 +213,19 @@ class MainActivity : ComponentActivity() {
         var progress by remember { mutableFloatStateOf(0f) }
         val offset: Float by animateFloatAsState(targetValue = (100 * progress), label = "")
 
-        callback = object : OnBackPressedCallback(enabled = false){
+        /*
+        callback = object : OnBackPressedCallback(enabled = false) {
 
             override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-                if(pages.size == 1){
+                if (pages.size == 1) {
                     super.handleOnBackProgressed(backEvent)
-                }else {
+                } else {
                     progress = backEvent.progress.toDouble().pow(.2).toFloat()
                 }
             }
 
             override fun handleOnBackPressed() {
-                if(pages.size >= 1){
+                if (pages.size >= 1) {
                     progress = 0f
                     userInputEnabled = false
                     back()
@@ -196,9 +233,9 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun handleOnBackCancelled() {
-                if(pages.size == 1){
+                if (pages.size == 1) {
                     super.handleOnBackCancelled()
-                }else {
+                } else {
                     progress = 0f
                 }
             }
@@ -207,22 +244,23 @@ class MainActivity : ComponentActivity() {
 
         onBackPressedDispatcher.addCallback(callback)
         callback.isEnabled = true
+        */
 
         pagerState = rememberPagerState(
             pageCount = { pagerPages.size }
         )
-        LaunchedEffect(pagerState){
-            snapshotFlow { pagerState.currentPageOffsetFraction }.collect{ currentOffset ->
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPageOffsetFraction }.collect { currentOffset ->
                 val currentPage = pagerState.currentPage
                 val previousPage = pagerState.settledPage
-                if(currentOffset < 0.001 && currentPage < previousPage && pages.lastIndex > currentPage){
-                    while(pages.size > currentPage + 1){
+                if (currentOffset < 0.001 && currentPage < previousPage && pages.lastIndex > currentPage) {
+                    while (pages.size > currentPage + 1) {
                         pages.removeAt(currentPage + 1)
                     }
                     userInputEnabled = true
                 }
-                if(currentPage == 0 && previousPage != 0){
-                    callback.isEnabled = false
+                if (currentPage == 0 && previousPage != 0) {
+                    //callback.isEnabled = false
                 }
             }
         }
@@ -245,25 +283,28 @@ class MainActivity : ComponentActivity() {
                     alpha = 1f - pageOffset.coerceIn(0f, 1f)
                 }
                 .offset(x = offset.dp)
-            when(pagerPages[page]){
+            when (pagerPages[page]) {
                 ROUTE_HOME -> {
                     HomePage(
                         modifier = pageModifier,
-                        firebaseManager = firebaseManager
+                        firebaseManager = firebaseManager,
                     )
                 }
+
                 ROUTE_SETTINGS -> {
                     SettingsPage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager
                     )
                 }
+
                 ROUTE_ACCOUNT -> {
                     AccountPage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager
                     )
                 }
+
                 ROUTE_LOGIN -> {
                     LoginPage(
                         modifier = pageModifier,
@@ -271,13 +312,14 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity
                     )
                 }
+
                 ROUTE_LOADING -> {
                     LoadingScreen()
                 }
             }
         }
 
-        if(!userInputEnabled){
+        if (!userInputEnabled) {
             Box(modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {})
@@ -293,8 +335,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun NavigationHost(
         firebaseManager: FirebaseManager,
-        dbManager: DBManager
-    ){
+        dbManager: DBManager,
+        backProgress: Float = 0f
+    ) {
 
         pageNavController = rememberNavController()
         currentPage = currentRoute(navController = pageNavController)
@@ -303,30 +346,72 @@ class MainActivity : ComponentActivity() {
         NavHost(
             navController = pageNavController,
             startDestination = ROUTE_HOME,
-        ){
+        ) {
             composable(
                 route = ROUTE_HOME,
-                enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
-                exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
-                content = { HomePage(firebaseManager = firebaseManager) }
+                enterTransition = {
+                    navEnterTransition(
+                        direction = DIRECTION_LEFT,
+                        orientation = orientation
+                    )
+                },
+                exitTransition = {
+                    navExitTransition(
+                        direction = DIRECTION_LEFT,
+                        orientation = orientation
+                    )
+                },
+                content = {
+                    HomePage(
+                        firebaseManager = firebaseManager,
+                        backProgress = backProgress
+                    )
+                }
             )
-            getNavDestination(this, orientation, ROUTE_SETTINGS) { SettingsPage(firebaseManager = firebaseManager) }
-            getNavDestination(this, orientation, ROUTE_LOGIN) { LoginPage(firebaseManager = firebaseManager, context = this@MainActivity) }
-            getNavDestination(this, orientation, ROUTE_ACCOUNT) { AccountPage(firebaseManager = firebaseManager) }
-            getNavDestination(this, orientation, ROUTE_DBMANAGER) { DBManagerPage(dbManager = dbManager) }
+            getNavDestination(
+                this,
+                orientation,
+                ROUTE_SETTINGS
+            ) { SettingsPage(firebaseManager = firebaseManager) }
+            getNavDestination(
+                this,
+                orientation,
+                ROUTE_LOGIN
+            ) { LoginPage(firebaseManager = firebaseManager, context = this@MainActivity) }
+            getNavDestination(
+                this,
+                orientation,
+                ROUTE_ACCOUNT
+            ) { AccountPage(firebaseManager = firebaseManager) }
+            getNavDestination(
+                this,
+                orientation,
+                ROUTE_DBMANAGER
+            ) { DBManagerPage(dbManager = dbManager) }
             getNavDestination(this, orientation, ROUTE_LOADING) { LoadingScreen() }
         }
     }
 
-    private fun getNavDestination(navGraphBuilder: NavGraphBuilder, orientation: Int, route: String, destination: @Composable()() -> Unit): Unit{
+    private fun getNavDestination(
+        navGraphBuilder: NavGraphBuilder,
+        orientation: Int,
+        route: String,
+        destination: @Composable() () -> Unit
+    ): Unit {
         return navGraphBuilder.composable(
             route = route,
-            enterTransition = { navEnterTransition(
-                direction = getNavEnterDirection(initialState.destination),
-                orientation = orientation) },
-            exitTransition = { navExitTransition(
-                direction = getNavExitDirection(initialState.destination),
-                orientation = orientation) },
+            enterTransition = {
+                navEnterTransition(
+                    direction = getNavEnterDirection(initialState.destination),
+                    orientation = orientation
+                )
+            },
+            exitTransition = {
+                navExitTransition(
+                    direction = getNavExitDirection(initialState.destination),
+                    orientation = orientation
+                )
+            },
             content = { destination() }
         )
     }
@@ -340,11 +425,11 @@ class MainActivity : ComponentActivity() {
      *
      * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
      */
-    private fun getNavEnterDirection(initialDestination: NavDestination): Int{
+    private fun getNavEnterDirection(initialDestination: NavDestination): Int {
 
-        return if(pageNavController.previousBackStackEntry?.destination?.route == initialDestination.route){
+        return if (pageNavController.previousBackStackEntry?.destination?.route == initialDestination.route) {
             DIRECTION_RIGHT
-        }else{
+        } else {
             DIRECTION_LEFT
         }
     }
@@ -359,13 +444,13 @@ class MainActivity : ComponentActivity() {
      * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
      */
     @SuppressLint("RestrictedApi")
-    private fun getNavExitDirection(initialDestination: NavDestination): Int{
+    private fun getNavExitDirection(initialDestination: NavDestination): Int {
 
         val currentBackStack = pageNavController.currentBackStack.value
 
-        return if(currentBackStack[currentBackStack.size - 2].destination.route == initialDestination.route){
+        return if (currentBackStack[currentBackStack.size - 2].destination.route == initialDestination.route) {
             DIRECTION_LEFT
-        }else{
+        } else {
             DIRECTION_RIGHT
         }
     }
@@ -376,15 +461,16 @@ class MainActivity : ComponentActivity() {
      * @param route The desired destination. It has to exist in [pageNavController]
      */
     @OptIn(ExperimentalFoundationApi::class)
-    fun navigateTo(route: String){
-        if(USE_PAGER_EXPERIMENTAL) {
+    fun navigateTo(route: String) {
+        onBack = null
+        if (USE_PAGER_EXPERIMENTAL) {
             pages.add(route)
             composableCoroutineScope?.launch {
                 pagerState.animateScrollToPage(pages.lastIndex)
             }
-        }else{
-            pageNavController.let{ controller ->
-                if(currentPage != route){
+        } else {
+            pageNavController.let { controller ->
+                if (currentPage != route) {
                     controller.navigate(route)
                 }
             }
@@ -394,17 +480,27 @@ class MainActivity : ComponentActivity() {
     /**
      * Public method to quickly navigate back to the previous destination.
      */
-    fun back(){
+    fun back() {
         Log.d("MainActivity", "going back")
         pageNavController.popBackStack()
+        onBack = null
         //callback.handleOnBackPressed()
         /*composableCoroutineScope?.launch {
             pagerState.animateScrollToPage(pages.lastIndex - 1)
         }*/
     }
 
-    fun backTo(route: String){
+    fun backTo(route: String) {
         pageNavController.popBackStack(route, inclusive = false)
+        onBack = null
+    }
+
+    fun setOnBack(function: () -> Unit) {
+        onBack = function
+    }
+
+    fun setCustomBackEnabled(enabled: Boolean){
+        callback.isEnabled = enabled
     }
 
     /**
@@ -412,15 +508,16 @@ class MainActivity : ComponentActivity() {
      *
      * This method is supposed to only be used by administrators.
      */
-    private fun registerCsvLauncher(dbManager: DBManager){
-        csvImportLauncher = mainActivity?.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
-            if(result.resultCode == Activity.RESULT_OK){
-                val data: Intent? = result.data
-                data?.data?.let { uri ->
-                    parseCsvUri(uri, dbManager)
-                } ?: Log.e("FileImport", "Failed to retrieve URI from Intent")
+    private fun registerCsvLauncher(dbManager: DBManager) {
+        csvImportLauncher =
+            mainActivity?.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    val data: Intent? = result.data
+                    data?.data?.let { uri ->
+                        parseCsvUri(uri, dbManager)
+                    } ?: Log.e("FileImport", "Failed to retrieve URI from Intent")
+                }
             }
-        }
     }
 
     fun showMessage(
@@ -438,80 +535,96 @@ class MainActivity : ComponentActivity() {
  *
  * @param modifier A [Modifier] to adjust the content.
  */
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomePage(
     modifier: Modifier = Modifier,
-    firebaseManager: FirebaseManager
-){
+    firebaseManager: FirebaseManager,
+    backProgress: Float = 0f
+) {
     val navigationItems = getNavigationDestinations(firebaseManager)
 
     val usePager = true
 
-    val pagerState = rememberPagerState(pageCount = {navigationItems.size})
+    val pagerState = rememberPagerState(pageCount = { navigationItems.size })
 
     val navController = rememberNavController()
     val currentRoute = currentRoute(navController = navController)
     val localConfig = LocalConfiguration.current
     val orientation = localConfig.orientation
-    val screenWidth = with(LocalDensity.current){ localConfig.screenWidthDp.dp.toPx() }
+    val screenWidth = with(LocalDensity.current) { localConfig.screenWidthDp.dp.toPx() }
 
     val scope = rememberCoroutineScope()
+
+    Log.d("HomePage", "Received back progress: $backProgress")
+
+    mainActivity?.setOnBack {
+        scope.launch {
+            pagerState.animateScrollToPage(0)
+        }
+    }
+
+    mainActivity?.setCustomBackEnabled(pagerState.currentPage != 0)
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
             NavigationBar {
-                navigationItems.forEachIndexed{ index, item ->
+                navigationItems.forEachIndexed { index, item ->
                     val navItem = item.getNavigationItem()
                     NavigationBarItem(
                         selected = pagerState.currentPage == index,
                         onClick = {
-                            if(currentRoute != navItem.route){
-                                if(usePager){
+                            if (currentRoute != navItem.route) {
+                                if (usePager) {
                                     scope.launch {
                                         pagerState.animateScrollBy(
                                             value = screenWidth * (index - pagerState.currentPage),
                                             animationSpec = tween(durationMillis = 350)
                                         )
                                     }
-                                }else {
+                                } else {
                                     navController.navigate(navItem.route) {
                                         launchSingleTop = true
                                         popUpTo("home")
                                     }
                                 }
-                        }},
+                            }
+                        },
                         icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
                         label = { Text(text = navItem.label) }
                     )
                 }
             }
         }
-    ){ paddingValues ->
-        if(usePager){
+    ) { paddingValues ->
+        if (usePager) {
             HorizontalPager(
                 modifier = Modifier
                     .padding(paddingValues),
                 state = pagerState,
                 beyondBoundsPageCount = 1
-            ) {page ->
+            ) { page ->
                 navigationItems[page].getContent(
                     modifier = Modifier
                         .graphicsLayer {
+                            val back = 1f - backProgress
                             val pageOffset = (
                                     (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                                     ).absoluteValue
-                            alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
+                            alpha = back * (1f - 2 * pageOffset).coerceIn(0f, 1f)
 
-                            val direction = (if(page % 2 == 0) 1f else -1f)
-                            val offsetDerivedFromProgress = EaseInCirc.transform(pageOffset) * screenWidth
+                            val direction = (if (page % 2 == 0) 1f else -1f)
+                            val offsetDerivedFromProgress =
+                                EaseInCirc.transform(pageOffset) * screenWidth
                             val completePageOffset = screenWidth * direction * pageOffset
-                            translationX = completePageOffset - direction * offsetDerivedFromProgress
+                            translationX =
+                                (backProgress * screenWidth / 4) - (completePageOffset - direction * offsetDerivedFromProgress)
                         }
                 )()
             }
-        }else {
+        } else {
             NavHost(
                 navController = navController,
                 modifier = Modifier.padding(paddingValues),
