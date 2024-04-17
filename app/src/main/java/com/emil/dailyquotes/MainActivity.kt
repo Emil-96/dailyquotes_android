@@ -403,6 +403,10 @@ class MainActivity : ComponentActivity() {
         }*/
     }
 
+    fun backTo(route: String){
+        pageNavController.popBackStack(route, inclusive = false)
+    }
+
     /**
      * Register the activity for the result when trying to import data from a CSV file.
      *
