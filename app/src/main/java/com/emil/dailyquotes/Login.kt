@@ -1,5 +1,8 @@
 package com.emil.dailyquotes
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -50,24 +53,30 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetPasswordOption
+import androidx.credentials.PasswordCredential
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 /**
  * Returns the login or signup page.
  *
  * @param modifier A [Modifier] to adjust the content.
  */
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class,
     ExperimentalComposeUiApi::class
 )
 @Composable
 fun LoginPage(
+    context: Context,
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager
 ) {
-
     var login by remember { mutableStateOf(true) }
-    var clicked by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -114,6 +123,27 @@ fun LoginPage(
                 )
             }
         }
+    }
+
+    val onLoginFocus = {
+        tryGoogleLogin(
+            context = context,
+            setEmail = {
+                email = it
+            },
+            setPassword = {
+                password = it
+            },
+            onDone = {
+                firebaseManager.logIn(
+                    email = email,
+                    password = password,
+                    onSuccess = {
+                        mainActivity?.back()
+                    }
+                )
+            }
+        )
     }
 
     Box(
@@ -167,7 +197,12 @@ fun LoginPage(
                         setText = { email = it },
                         keyboardType = KeyboardType.Email,
                         focusManager = focusManager,
-                        autofillNode = emailAutofillNode
+                        autofillNode = emailAutofillNode,
+                        onFocus = {
+                            if (login) {
+                                onLoginFocus()
+                            }
+                        }
                     )
                     TextField(
                         label = "Password",
@@ -178,6 +213,11 @@ fun LoginPage(
                         isFinal = login,
                         focusManager = focusManager,
                         autofillNode = if (login) passwordAutofillNode else newPasswordAutofillNode,
+                        onFocus = {
+                            if (login) {
+                                onLoginFocus()
+                            }
+                        },
                         onDone = {
                             finish()
                         }
@@ -219,6 +259,39 @@ fun LoginPage(
             }
         }
     }
+}
+
+private fun tryGoogleLogin(
+    context: Context,
+    setEmail: (String) -> Unit,
+    setPassword: (String) -> Unit,
+    onDone: () -> Unit
+) {
+    val credentialManager = CredentialManager.create(context)
+    val getPasswordOption = GetPasswordOption()
+
+    val getCredentialRequest = GetCredentialRequest(
+        listOf(getPasswordOption)
+    )
+
+    mainActivity?.lifecycleScope?.launch {
+        try {
+            val result = credentialManager.getCredential(
+                context = context,
+                request = getCredentialRequest
+            )
+
+            val credential = result.credential
+            if (credential is PasswordCredential) {
+                setEmail(credential.id)
+                setPassword(credential.password)
+                onDone()
+            }
+        } catch (e: Exception) {
+            Log.e("Login", "Caught exception: $e")
+        }
+    }
+
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -270,8 +343,9 @@ private fun TextField(
     isFinal: Boolean = false,
     focusManager: FocusManager,
     autofillNode: AutofillNode,
+    onFocus: () -> Unit = {},
     onDone: () -> Unit = {}
-){
+) {
     val autofill = LocalAutofill.current
 
     OutlinedTextField(
@@ -289,11 +363,15 @@ private fun TextField(
                         cancelAutofillForNode(autofillNode)
                     }
                 }
+
+                if (focusState.isFocused) {
+                    onFocus()
+                }
             },
         value = text,
         onValueChange = { setText(it) },
         label = { Text(text = label) },
-        visualTransformation = if(isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(
             capitalization = capitalization,
             keyboardType = keyboardType,
