@@ -160,6 +160,7 @@ class MainActivity : ComponentActivity() {
     fun NavigationPager(
         firebaseManager: FirebaseManager
     ){
+        // TODO: Add back callback
 
         val pagerPages = remember { pages }
 
