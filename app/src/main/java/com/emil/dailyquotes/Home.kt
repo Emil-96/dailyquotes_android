@@ -24,6 +24,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -82,6 +83,7 @@ fun HomeScreen(
                 .animateContentSize(
                     animationSpec = tween(transitionDurationMillis)
                 ),
+            shape = RoundedCornerShape(24.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -112,7 +114,7 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End.apply { Arrangement.spacedBy(24.dp) }
+                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
                 ) {
                     FilledIconToggleButton(
                         checked = favorite,
