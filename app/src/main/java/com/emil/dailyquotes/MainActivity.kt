@@ -499,7 +499,7 @@ class MainActivity : ComponentActivity() {
         onBack = function
     }
 
-    fun setCustomBackEnabled(enabled: Boolean){
+    fun setCustomBackEnabled(enabled: Boolean) {
         callback.isEnabled = enabled
     }
 
@@ -620,7 +620,8 @@ fun HomePage(
                                 EaseInCirc.transform(pageOffset) * screenWidth
                             val completePageOffset = screenWidth * direction * pageOffset
                             translationX =
-                                (backProgress * screenWidth / 4) - (completePageOffset - direction * offsetDerivedFromProgress)
+                                    //(backProgress * screenWidth / 4) -
+                                (completePageOffset - direction * offsetDerivedFromProgress)
                         }
                 )()
             }
