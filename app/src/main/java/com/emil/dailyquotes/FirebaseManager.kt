@@ -169,6 +169,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
         onSuccess: () -> Unit,
         onFailure: () -> Unit = {}
     ){
+        // TODO: Add fail case
         auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener {
             auth.uid?.let { userId ->
                 val userMap = hashMapOf(
@@ -201,6 +202,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
         onSuccess: () -> Unit,
         onFailure: () -> Unit = {}
     ){
+        // TODO: Add fail case
         auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
             loadUserInfo()
             onSuccess()
