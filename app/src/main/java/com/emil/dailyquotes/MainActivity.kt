@@ -271,6 +271,9 @@ class MainActivity : ComponentActivity() {
                         context = this@MainActivity
                     )
                 }
+                ROUTE_LOADING -> {
+                    LoadingScreen()
+                }
             }
         }
 

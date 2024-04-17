@@ -98,19 +98,19 @@ fun LoginPage(
 
     val finish = {
         if (finishedEnabled) {
-            clicked = true
+            mainActivity?.navigateTo(ROUTE_LOADING)
             if (login) {
                 firebaseManager.logIn(
                     email = email,
                     password = password,
-                    onSuccess = { mainActivity?.back() }
+                    onSuccess = { mainActivity?.backTo(ROUTE_SETTINGS) },
                 )
             } else {
                 firebaseManager.register(
                     name = name,
                     email = email,
                     password = password,
-                    onSuccess = { mainActivity?.back() }
+                    onSuccess = { mainActivity?.backTo(ROUTE_SETTINGS) }
                 )
             }
         }
@@ -213,15 +213,7 @@ fun LoginPage(
                             finish()
                         }
                     ) {
-                        if (!clicked) {
-                            Text(text = if (login) "Log in" else "Sign up")
-                        } else {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 4.dp
-                            )
-                        }
+                        Text(text = if (login) "Log in" else "Sign up")
                     }
                 }
             }
