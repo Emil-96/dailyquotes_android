@@ -1,12 +1,22 @@
 package com.emil.dailyquotes
 
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imeAnimationTarget
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,9 +24,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,93 +46,81 @@ import androidx.compose.ui.unit.dp
  *
  * @param modifier A [Modifier] to adjust the content.
  */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun LoginPage(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager
-){
+) {
 
     var login by remember { mutableStateOf(true) }
 
+    val imePadding = WindowInsets.imeAnimationTarget.asPaddingValues()
+
+    Log.d("Login", "IME Target as padding: ${imePadding.calculateBottomPadding()}")
+    Log.d(
+        "Login",
+        "IME Target and zero padding are the same: ${imePadding.calculateBottomPadding() == (0.dp)}"
+    )
+
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .imePadding()
+            .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column (
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
+        ) {
+            PrimaryTabRow(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp),
+                selectedTabIndex = true.compareTo(login),
+                divider = {}
             ) {
-                if(login) {
-                    Button(
-                        onClick = {  },
-                    ) {
-                        Text(text = "Log in")
-                    }
-                    OutlinedButton(
-                        onClick = { login = false },
-                    ) {
-                        Text(text = "Sign up")
-                    }
-                }else{
-                    OutlinedButton(
-                        onClick = { login = true },
-                    ) {
-                        Text(text = "Log in")
-                    }
-                    Button(
-                        onClick = {  },
-                    ) {
-                        Text(text = "Sign up")
-                    }
+                TabTitle(text = "Log in") {
+                    login = true
+                }
+                TabTitle(text = "Register") {
+                    login = false
                 }
             }
 
             ElevatedCard(
+                elevation = CardDefaults.elevatedCardElevation(),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 64.dp),
-                elevation = CardDefaults.elevatedCardElevation()
-            ){
+                    .focusable(true)
+            ) {
 
                 var name by remember { mutableStateOf("") }
                 var email by remember { mutableStateOf("") }
                 var password by remember { mutableStateOf("") }
                 var confirmPassword by remember { mutableStateOf("") }
 
-                Box(
-                    modifier = Modifier
-                        .animateContentSize()
-                        .padding(vertical = 16.dp, horizontal = 24.dp),
+                Column(
+                    modifier = modifier.padding(vertical = 16.dp, horizontal = 24.dp)
                 ) {
-                    if (login) {
-                        LoginFields(
-                            email = email,
-                            setEmail = { email = it },
-                            password = password,
-                            setPassword = { password = it }
-                        )
-                    } else {
-                        SignUpFields(
-                            name = name,
-                            setName = { name = it },
-                            email = email,
-                            setEmail = { email = it },
-                            password = password,
-                            setPassword = { password = it },
-                            confirmPassword = confirmPassword,
-                            setConfirmPassword = { confirmPassword = it }
-                        )
+                    AnimatedVisibility(visible = !login) {
+                        NameField(name = name, setName = { name = it })
+                    }
+                    EmailField(email = email, setEmail = { email = it })
+                    PasswordField(password = password, setPassword = { password = it })
+                    AnimatedVisibility(visible = !login) {
+                        PasswordField(
+                            isConfirm = true,
+                            password = confirmPassword,
+                            setPassword = { confirmPassword = it })
                     }
                 }
 
                 Row(
                     modifier = Modifier
+                        .animateContentSize()
                         .fillMaxWidth()
-                        .padding(end = 24.dp, bottom = 16.dp)
-                        .animateContentSize(),
+                        .padding(end = 24.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
 
@@ -131,13 +130,13 @@ fun LoginPage(
                         enabled = email.isNotEmpty() && password.isNotEmpty() && (login || password == confirmPassword),
                         onClick = {
                             clicked = true
-                            if(login){
+                            if (login) {
                                 firebaseManager.logIn(
                                     email = email,
                                     password = password,
                                     onSuccess = { mainActivity?.back() }
                                 )
-                            }else{
+                            } else {
                                 firebaseManager.register(
                                     name = name,
                                     email = email,
@@ -147,9 +146,9 @@ fun LoginPage(
                             }
                         }
                     ) {
-                        if(!clicked) {
+                        if (!clicked) {
                             Text(text = if (login) "Log in" else "Sign up")
-                        }else{
+                        } else {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 color = MaterialTheme.colorScheme.onPrimary,
@@ -163,59 +162,27 @@ fun LoginPage(
     }
 }
 
-/**
- * Returns the fields required for logging in.
- *
- * @param modifier A [Modifier] to adjust the content.
- * @param email The email address of the user.
- * @param setEmail The method to be called when the email text changes.
- * @param password The password of the user.
- * @param setPassword The method to be called when the password text changes.
- */
 @Composable
-fun LoginFields(
-    modifier: Modifier = Modifier,
-    email: String = "",
-    setEmail: (String) -> Unit = {},
-    password: String = "",
-    setPassword: (String) -> Unit = {}
-){
-    Column(modifier = modifier) {
-        EmailField(email = email, setEmail = setEmail)
-        PasswordField(password = password, setPassword = setPassword)
+private fun TabTitle(
+    text: String,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember {
+        MutableInteractionSource()
     }
-}
 
-/**
- * Returns the fields required for signing up.
- *
- * @param modifier A [Modifier] to adjust the content.
- * @param name The name of the user.
- * @param setName The method to be called when the name text changes.
- * @param email The email address of the user.
- * @param setEmail The method to be called when the email text changes.
- * @param password The password of the user.
- * @param setPassword The method to be called when the password text changes.
- * @param confirmPassword The confirmation of the user's password.
- * @param setConfirmPassword The method to be called when the confirmation text of the user's password changes.
- */
-@Composable
-fun SignUpFields(
-    modifier: Modifier = Modifier,
-    name: String = "",
-    setName: (String) -> Unit = {},
-    email: String = "",
-    setEmail: (String) -> Unit = {},
-    password: String = "",
-    setPassword: (String) -> Unit = {},
-    confirmPassword: String = "",
-    setConfirmPassword: (String) -> Unit = {}
-){
-    Column(modifier = modifier) {
-        NameField(name = name, setName = setName)
-        EmailField(email = email, setEmail = setEmail)
-        PasswordField(password = password, setPassword = setPassword)
-        PasswordField(isConfirm = true, password = confirmPassword, setPassword = setConfirmPassword)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .clickable(
+                indication = null,
+                interactionSource = interactionSource
+            ) { onClick() }
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(16.dp)
+        )
     }
 }
 
@@ -229,7 +196,7 @@ fun SignUpFields(
 fun NameField(
     name: String,
     setName: (String) -> Unit
-){
+) {
     OutlinedTextField(
         modifier = Modifier.fillMaxWidth(),
         value = name,
@@ -251,7 +218,7 @@ fun NameField(
 fun EmailField(
     email: String,
     setEmail: (String) -> Unit
-){
+) {
     OutlinedTextField(
         modifier = Modifier.fillMaxWidth(),
         value = email,
@@ -275,12 +242,12 @@ fun PasswordField(
     isConfirm: Boolean = false,
     password: String,
     setPassword: (String) -> Unit
-){
+) {
     OutlinedTextField(
         modifier = Modifier.fillMaxWidth(),
         value = password,
         onValueChange = { setPassword(it) },
-        label = { Text(text = if(isConfirm) "Password" else "Confirm password") },
+        label = { Text(text = if (!isConfirm) "Password" else "Confirm password") },
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password
