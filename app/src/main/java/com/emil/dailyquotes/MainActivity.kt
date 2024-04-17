@@ -57,6 +57,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -78,6 +79,13 @@ private const val USE_PAGER_EXPERIMENTAL = false
 
 private const val DIRECTION_LEFT = -1
 private const val DIRECTION_RIGHT = 1
+
+const val ROUTE_HOME = "home"
+const val ROUTE_SETTINGS = "settings"
+const val ROUTE_LOGIN = "login"
+const val ROUTE_LOADING = "loading"
+const val ROUTE_ACCOUNT = "account"
+const val ROUTE_DBMANAGER = "db_manager"
 
 var mainActivity: MainActivity? = null
 var preferenceManager: PreferenceManager? = null
@@ -238,28 +246,29 @@ class MainActivity : ComponentActivity() {
                 }
                 .offset(x = offset.dp)
             when(pagerPages[page]){
-                "home" -> {
+                ROUTE_HOME -> {
                     HomePage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager
                     )
                 }
-                "settings" -> {
+                ROUTE_SETTINGS -> {
                     SettingsPage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager
                     )
                 }
-                "account" -> {
+                ROUTE_ACCOUNT -> {
                     AccountPage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager
                     )
                 }
-                "login" -> {
+                ROUTE_LOGIN -> {
                     LoginPage(
                         modifier = pageModifier,
-                        firebaseManager = firebaseManager
+                        firebaseManager = firebaseManager,
+                        context = this@MainActivity
                     )
                 }
             }
@@ -290,10 +299,10 @@ class MainActivity : ComponentActivity() {
 
         NavHost(
             navController = pageNavController,
-            startDestination = "home",
+            startDestination = ROUTE_HOME,
         ){
             composable(
-                route = "home",
+                route = ROUTE_HOME,
                 enterTransition = { navEnterTransition(direction = DIRECTION_LEFT, orientation = orientation) },
                 exitTransition = { navExitTransition(direction = DIRECTION_LEFT, orientation = orientation) },
                 content = { HomePage(firebaseManager = firebaseManager) }
