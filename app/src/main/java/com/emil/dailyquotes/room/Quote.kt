@@ -10,6 +10,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * This file contains all code required for the local database.
@@ -30,6 +33,7 @@ data class Quote(
     @ColumnInfo(name = "quote") val quote: String,
     @ColumnInfo(name = "image_url") val imageUrl: String,
     @ColumnInfo(name = "quote_url") val quoteUrl: String,
+    @ColumnInfo(name = "is_favorite") var isFavorite: Boolean
 )
 
 /**
@@ -69,12 +73,15 @@ interface QuoteDao{
      */
     @Delete
     suspend fun delete(quote: Quote)
+
+    @Update
+    suspend fun update(quote: Quote)
 }
 
 /**
  * The [RoomDatabase] representing the local database.
  */
-@Database(entities = [Quote::class], version = 1)
+@Database(entities = [Quote::class], version = 2)
 abstract class QuoteDatabase : RoomDatabase(){
 
     /**

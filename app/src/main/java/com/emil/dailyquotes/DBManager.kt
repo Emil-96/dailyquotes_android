@@ -306,7 +306,8 @@ private fun parseQuoteFromCsv(csvLine: String): Quote? {
             category = parts[1],
             quote = quote,
             imageUrl = parts[3],
-            quoteUrl = parts[4]
+            quoteUrl = parts[4],
+            isFavorite = false
         )
     }else{
         null
