@@ -115,7 +115,6 @@ fun LoginPage(
                     email = email,
                     password = password,
                     onSuccess = {
-                        registerPassword(context, email, password)
                         mainActivity?.backTo(ROUTE_SETTINGS) },
                 )
             } else {
@@ -124,8 +123,8 @@ fun LoginPage(
                     email = email,
                     password = password,
                     onSuccess = {
-                        registerPassword(context, email, password)
                         mainActivity?.backTo(ROUTE_SETTINGS)
+                        registerPassword(context, email, password)
                     }
                 )
             }
