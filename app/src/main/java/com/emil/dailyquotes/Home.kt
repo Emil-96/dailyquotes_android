@@ -60,8 +60,16 @@ fun HomeScreen(
     firebaseManager: FirebaseManager,
     preferenceManager: PreferenceManager
 ) {
-    val interactionSource = remember{ MutableInteractionSource() }
-    val vibrator = LocalHapticFeedback.current
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+    ){
+        DailyQuote(firebaseManager = firebaseManager, preferenceManager = preferenceManager)
+        if(firebaseManager.isSignedIn()) {
+            FavoritePager(firebaseManager = firebaseManager)
+        }
+    }
+}
 
 @Composable
 private fun DailyQuote(

@@ -58,6 +58,9 @@ interface QuoteDao{
     @Query("SELECT * FROM quote WHERE id = (:quoteId)")
     suspend fun getQuoteById(quoteId: String): Quote
 
+    @Query("SELECT * FROM quote WHERE is_favorite = 1")
+    suspend fun getFavorites(): List<Quote>
+
     /**
      * Inserts all [Quote] elements in the local database.
      *

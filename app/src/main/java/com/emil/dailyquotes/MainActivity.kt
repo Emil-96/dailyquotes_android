@@ -87,6 +87,7 @@ const val ROUTE_LOGIN = "login"
 const val ROUTE_LOADING = "loading"
 const val ROUTE_ACCOUNT = "account"
 const val ROUTE_DBMANAGER = "db_manager"
+const val ROUTE_FAVORITES = "favorites"
 
 var mainActivity: MainActivity? = null
 
@@ -317,6 +318,10 @@ class MainActivity : ComponentActivity() {
                 ROUTE_LOADING -> {
                     LoadingScreen()
                 }
+
+                ROUTE_FAVORITES -> {
+                    FavoritePage(firebaseManager = firebaseManager)
+                }
             }
         }
 
@@ -392,6 +397,11 @@ class MainActivity : ComponentActivity() {
                 ROUTE_DBMANAGER
             ) { DBManagerPage(dbManager = dbManager) }
             getNavDestination(this, orientation, ROUTE_LOADING) { LoadingScreen() }
+            getNavDestination(
+                this,
+                orientation,
+                ROUTE_FAVORITES
+            ) { FavoritePage(firebaseManager = firebaseManager) }
         }
     }
 

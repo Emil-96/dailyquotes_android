@@ -472,6 +472,9 @@ class FirebaseManager(
         }
     }
 
+    suspend fun getFavorites(): List<Quote>{
+        return quoteDao.getFavorites()
+    }
 }
 
 /**
