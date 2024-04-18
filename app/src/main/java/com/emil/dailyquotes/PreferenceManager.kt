@@ -73,36 +73,6 @@ class PreferenceManager(
     }
 
     /**
-     * Loads the quote that has been saved to the local storage as the quote of the day.
-     */
-    fun loadDailyQuote(
-        firebaseManager: FirebaseManager,
-        dao: QuoteDao,
-    ){
-        Log.d("PreferenceManager", "loading random quote")
-        mainActivity?.lifecycleScope?.launch {
-            mainActivity?.dataStore?.data?.collect { preferences ->
-                val savedDate = preferences[stringPreferencesKey(PREFERENCE_KEY_DATE)]
-                val savedQuote = preferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)]
-
-                if (savedDate == LocalDate.now().toString()) {
-                    savedQuote?.let { quoteId ->
-                        val retrievedQuote = dao.getQuoteById(quoteId)
-                        _quote.postValue(retrievedQuote)
-                    }
-                } else {
-                    firebaseManager.getRandomQuote { fetchedQuote ->
-                        _quote.postValue(fetchedQuote)
-                        mainActivity?.lifecycleScope?.launch {
-                            saveDailyQuote(fetchedQuote)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Saves a given [Quote] element to the local storage as the quote of the day.
      *
      * @param quote The quote to be saved.
@@ -112,6 +82,13 @@ class PreferenceManager(
             mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)] = quote.id
             mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_DATE)] = LocalDate.now().toString()
             Log.d("PreferenceManager", "Saved quote at date ${Calendar.DATE} ${parseQuoteToJson(quote)}")
+        }
+    }
+
+    fun setDailyQuote(quote: Quote){
+        _quote.postValue(quote)
+        mainActivity?.lifecycleScope?.launch {
+            saveDailyQuote(quote)
         }
     }
 }

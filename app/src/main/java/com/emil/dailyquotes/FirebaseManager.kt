@@ -17,6 +17,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import kotlin.random.Random
 
 private const val NAME_KEY = "firebase_display_name"
@@ -29,6 +30,7 @@ private const val EMAIL_KEY = "firebase_email"
  */
 class FirebaseManager(
     private val context: Context,
+    private val preferenceManager: PreferenceManager,
     private val database: QuoteDatabase,
     private val onIsReady: (FirebaseManager) -> Unit
 ) {
@@ -42,7 +44,7 @@ class FirebaseManager(
 
     private var isAdmin = false
 
-    private var quoteDao: QuoteDao? = database.quoteDao()
+    private var quoteDao: QuoteDao = database.quoteDao()
     private var localDatabaseSize: Int = 0
 
     /**
@@ -52,8 +54,9 @@ class FirebaseManager(
         loadUserInfo()
         log("Trying to load preferences")
         mainActivity?.lifecycleScope?.launch {
-            localDatabaseSize = quoteDao?.getAll()?.size ?: 0
+            localDatabaseSize = quoteDao.getAll().size
             Log.d("FirebaseManager", "Found $localDatabaseSize elements in local database")
+            loadDailyQuote(preferenceManager = preferenceManager)
             log("Executing onIsReady function")
             onIsReady(this@FirebaseManager)
             context.dataStore.data
@@ -114,7 +117,18 @@ class FirebaseManager(
                     val name = snapshot.get("name").toString()
                     val email = auth.currentUser?.email
 
-                    log("retrieved name \"$name\" and email \"$email\"")
+                    snapshot.get("favorites")?.let{ favorites ->
+                        with(favorites as ArrayList<String>) {
+                            for (favorite in favorites) {
+                                mainActivity?.lifecycleScope?.launch{
+                                    val quote = quoteDao.getQuoteById(favorite)
+                                    quote.isFavorite = true
+                                    quoteDao.update(quote)
+                                }
+
+                            }
+                        }
+                    }
 
                     mainActivity?.lifecycleScope?.launch {
                         saveUserInfo(name, email ?: "")
@@ -341,6 +355,32 @@ class FirebaseManager(
                 }
                 localDatabaseSize = quoteDao.getAll().size
                 onSuccess()
+            }
+        }
+    }
+
+    /**
+     * Loads the quote that has been saved to the local storage as the quote of the day.
+     */
+    fun loadDailyQuote(
+        preferenceManager: PreferenceManager
+    ){
+        Log.d("PreferenceManager", "loading random quote")
+        mainActivity?.lifecycleScope?.launch {
+            mainActivity?.dataStore?.data?.collect { preferences ->
+                val savedDate = preferences[stringPreferencesKey(PREFERENCE_KEY_DATE)]
+                val savedQuote = preferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)]
+
+                if (savedDate == LocalDate.now().toString()) {
+                    savedQuote?.let { quoteId ->
+                        val retrievedQuote = quoteDao.getQuoteById(quoteId)
+                        preferenceManager.setDailyQuote(retrievedQuote)
+                    }
+                } else {
+                    getRandomQuote { fetchedQuote ->
+                        preferenceManager.setDailyQuote(fetchedQuote)
+                    }
+                }
             }
         }
     }
