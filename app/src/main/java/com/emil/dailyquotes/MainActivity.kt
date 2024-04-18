@@ -129,10 +129,9 @@ class MainActivity : ComponentActivity() {
             .allowMainThreadQueries()
             .build()
 
-        val firebaseManager = FirebaseManager(this, quoteDatabase) {}
         val preferenceManager = PreferenceManager {}
+        val firebaseManager = FirebaseManager(this, preferenceManager, quoteDatabase) {}
         Log.d("MainActivity", "Trying to load daily quote")
-        preferenceManager.loadDailyQuote(firebaseManager, quoteDatabase.quoteDao())
 
         val dbManager = DBManager(firebaseManager)
 
