@@ -23,11 +23,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 
-fun getNavigationDestinations(firebaseManager: FirebaseManager): List<NavigationDestination>{
+fun getNavigationDestinations(firebaseManager: FirebaseManager, preferenceManager: PreferenceManager): List<NavigationDestination>{
     return listOf(
         NavigationDestination(
             navItem = BottomNavigationItem.HomeScreenItem,
-            content = { HomeScreen(firebaseManager = firebaseManager) }
+            content = { HomeScreen(firebaseManager = firebaseManager, preferenceManager = preferenceManager) }
         ),
         NavigationDestination(
             navItem = BottomNavigationItem.ProfileScreenItem,

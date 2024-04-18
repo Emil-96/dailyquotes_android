@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.emil.dailyquotes.room.Quote
+import com.emil.dailyquotes.room.QuoteDao
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.util.Calendar
@@ -20,7 +21,7 @@ const val PREFERENCE_KEY_VERSION = "database_version"
  * A class to handle all interaction with the local storage.
  */
 class PreferenceManager(
-    private val firebaseManager: FirebaseManager
+    onIsReady: () -> Unit
 ){
 
     private var _quote: MutableLiveData<Quote> = MutableLiveData()
@@ -32,9 +33,7 @@ class PreferenceManager(
      * The constructor.
      */
     init {
-        loadInfo {
-            firebaseManager.loadInfo()
-        }
+        loadInfo { onIsReady() }
     }
 
     /**
@@ -76,7 +75,10 @@ class PreferenceManager(
     /**
      * Loads the quote that has been saved to the local storage as the quote of the day.
      */
-    fun loadDailyQuote(){
+    fun loadDailyQuote(
+        firebaseManager: FirebaseManager,
+        dao: QuoteDao,
+    ){
         Log.d("PreferenceManager", "loading random quote")
         mainActivity?.lifecycleScope?.launch {
             mainActivity?.dataStore?.data?.collect { preferences ->
@@ -84,14 +86,9 @@ class PreferenceManager(
                 val savedQuote = preferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)]
 
                 if (savedDate == LocalDate.now().toString()) {
-                    savedQuote?.let { jsonQuote ->
-                        val parsedQuote = parseQuote(jsonQuote)
-                        parsedQuote?.let {
-                            _quote.postValue(it)
-                        }?:{
-                            Log.e("PreferenceManager", "Error parsing stored daily quote")
-                            mainActivity?.showMessage("Error loading the daily quote")
-                        }
+                    savedQuote?.let { quoteId ->
+                        val retrievedQuote = dao.getQuoteById(quoteId)
+                        _quote.postValue(retrievedQuote)
                     }
                 } else {
                     firebaseManager.getRandomQuote { fetchedQuote ->
@@ -112,7 +109,7 @@ class PreferenceManager(
      */
     private suspend fun saveDailyQuote(quote: Quote){
         mainActivity?.dataStore?.edit {  mutablePreferences ->
-            mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)] = parseQuoteToJson(quote)
+            mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_QUOTE)] = quote.id
             mutablePreferences[stringPreferencesKey(PREFERENCE_KEY_DATE)] = LocalDate.now().toString()
             Log.d("PreferenceManager", "Saved quote at date ${Calendar.DATE} ${parseQuoteToJson(quote)}")
         }

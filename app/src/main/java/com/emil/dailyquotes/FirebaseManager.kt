@@ -9,9 +9,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import com.emil.dailyquotes.room.Quote
 import com.emil.dailyquotes.room.QuoteDao
+import com.emil.dailyquotes.room.QuoteDatabase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -25,7 +27,11 @@ private const val EMAIL_KEY = "firebase_email"
  *
  * @param context A context object required to save certain things locally.
  */
-class FirebaseManager(private val context: Context, private val onIsReady: (FirebaseManager) -> Unit){
+class FirebaseManager(
+    private val context: Context,
+    private val database: QuoteDatabase,
+    private val onIsReady: (FirebaseManager) -> Unit
+) {
     private val auth = Firebase.auth
     private val db = Firebase.firestore
 
@@ -36,7 +42,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
 
     private var isAdmin = false
 
-    private var quoteDao: QuoteDao? = quoteDatabase?.quoteDao()
+    private var quoteDao: QuoteDao? = database.quoteDao()
     private var localDatabaseSize: Int = 0
 
     /**
@@ -62,23 +68,25 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
     /**
      * @return True if a user is signed in.
      */
-    fun isSignedIn(): Boolean{
+    fun isSignedIn(): Boolean {
         return auth.currentUser != null
     }
 
     /**
      * Fetches the database information of the remote database.
      */
-    fun loadInfo(){
-        quoteDao = quoteDatabase?.quoteDao()
+    fun loadInfo(
+        preferenceManager: PreferenceManager
+    ) {
+        quoteDao = database.quoteDao()
         db.collection("info").document("quotes").get().addOnSuccessListener { document ->
             val remoteDatabaseVersion = (document.data?.get("version") as Long)
             Log.d("FirebaseManager", "Remote database version: $remoteDatabaseVersion")
-            log("Local database version: ${preferenceManager?.getLocalDatabaseVersion()}")
-            if(remoteDatabaseVersion > (preferenceManager?.getLocalDatabaseVersion() ?: 1)){
+            log("Local database version: ${preferenceManager.getLocalDatabaseVersion()}")
+            if (remoteDatabaseVersion > (preferenceManager.getLocalDatabaseVersion())) {
                 log("Reloading complete database")
-                loadAllQuotes{
-                    preferenceManager?.saveInfo(remoteDatabaseVersion)
+                loadAllQuotes {
+                    preferenceManager.saveInfo(remoteDatabaseVersion)
                 }
             }
         }
@@ -94,9 +102,9 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
     /**
      * Fetches the user information and save the result locally.
      */
-    private fun loadUserInfo(){
+    private fun loadUserInfo() {
         log("Loading user info")
-        auth.uid?.let{ userId ->
+        auth.uid?.let { userId ->
             db
                 .collection("users")
                 .document(userId)
@@ -108,7 +116,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
 
                     log("retrieved name \"$name\" and email \"$email\"")
 
-                    mainActivity?.lifecycleScope?.launch{
+                    mainActivity?.lifecycleScope?.launch {
                         saveUserInfo(name, email ?: "")
                     }
                     _name.postValue(name)
@@ -124,8 +132,8 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      * @param name The name to be saved.
      * @param email The email to be saved.
      */
-    private suspend fun saveUserInfo(name: String, email: String){
-        context.dataStore.edit {  mutablePreferences ->
+    private suspend fun saveUserInfo(name: String, email: String) {
+        context.dataStore.edit { mutablePreferences ->
             mutablePreferences[stringPreferencesKey(NAME_KEY)] = name
             mutablePreferences[stringPreferencesKey(EMAIL_KEY)] = email
             log("Saved name ($name) and email ($email)")
@@ -149,7 +157,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
     /**
      * @return The admin state of the user.
      */
-    fun isAdmin(): Boolean{
+    fun isAdmin(): Boolean {
         return isAdmin
     }
 
@@ -168,7 +176,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
         password: String,
         onSuccess: () -> Unit,
         onFailure: () -> Unit = {}
-    ){
+    ) {
         // TODO: Add fail case
         auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener {
             auth.uid?.let { userId ->
@@ -201,7 +209,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
         password: String,
         onSuccess: () -> Unit,
         onFailure: () -> Unit = {}
-    ){
+    ) {
         // TODO: Add fail case
         auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
             loadUserInfo()
@@ -218,7 +226,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      */
     fun logOut(
         onSuccess: () -> Unit
-    ){
+    ) {
         auth.signOut()
         mainActivity?.lifecycleScope?.launch {
             saveUserInfo("", "")
@@ -232,7 +240,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      *
      * @param message The message to be logged.
      */
-    private fun log(message: String){
+    private fun log(message: String) {
         Log.d("FirebaseManager", message)
     }
 
@@ -242,8 +250,8 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      * @param elements The list of [Quote] elements that to be uploaded.
      * @param onSuccess The code to be executed when the upload succeeds.
      */
-    fun uploadCsvElements(elements: List<Quote>, onSuccess: () -> Unit){
-        if(!isAdmin){
+    fun uploadCsvElements(elements: List<Quote>, onSuccess: () -> Unit) {
+        if (!isAdmin) {
             onSuccess()
             return
         }
@@ -251,7 +259,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
 
         for (subList in formatCsvElementsToBatches(elements)) {
             db.runBatch { batch ->
-                for(batchItem in subList) {
+                for (batchItem in subList) {
                     batch.set(db.collection("quotes").document(), batchItem)
                 }
             }.addOnSuccessListener {
@@ -271,24 +279,27 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      * @param elements The list of all [Quote] elements to be uploaded.
      * @param batchSize The size of the batches.
      */
-    private fun formatCsvElementsToBatches(elements: List<Quote>, batchSize: Int = 500): ArrayList<List<Map<String, String>>>{
+    private fun formatCsvElementsToBatches(
+        elements: List<Quote>,
+        batchSize: Int = 500
+    ): ArrayList<List<Map<String, String>>> {
 
         val fullMapList: ArrayList<Map<String, String>> = arrayListOf()
 
-        for(element in elements){
+        for (element in elements) {
             fullMapList.add(parseQuoteToMap(element))
         }
 
         val outputListOfLists: ArrayList<List<Map<String, String>>> = arrayListOf()
 
-       var currentSteppedIndex = 0
+        var currentSteppedIndex = 0
 
-       while(currentSteppedIndex < fullMapList.size){
-           val endIndex = (currentSteppedIndex + batchSize).coerceAtMost(fullMapList.size)
-           val subList = fullMapList.subList(currentSteppedIndex, endIndex)
-           outputListOfLists.add(subList)
-           currentSteppedIndex = endIndex
-       }
+        while (currentSteppedIndex < fullMapList.size) {
+            val endIndex = (currentSteppedIndex + batchSize).coerceAtMost(fullMapList.size)
+            val subList = fullMapList.subList(currentSteppedIndex, endIndex)
+            outputListOfLists.add(subList)
+            currentSteppedIndex = endIndex
+        }
 
         return outputListOfLists
 
@@ -317,21 +328,19 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      *
      * @param onSuccess The code to be executed when the fetch succeeds.
      */
-    private fun loadAllQuotes(onSuccess: () -> Unit = {}){
+    private fun loadAllQuotes(onSuccess: () -> Unit = {}) {
 
         log("Loading all quotes")
 
-        val quoteDao = quoteDatabase?.quoteDao()
+        val quoteDao = database.quoteDao()
 
-        quoteDao?.let {
-            db.collection("quotes").get().addOnSuccessListener { snapshot ->
-                mainActivity?.lifecycleScope?.launch {
-                    for (document in snapshot.documents) {
-                        quoteDao.insertAll(parseQuote(document))
-                    }
-                    localDatabaseSize = quoteDao.getAll().size
-                    onSuccess()
+        db.collection("quotes").get().addOnSuccessListener { snapshot ->
+            mainActivity?.lifecycleScope?.launch {
+                for (document in snapshot.documents) {
+                    quoteDao.insertAll(parseQuote(document))
                 }
+                localDatabaseSize = quoteDao.getAll().size
+                onSuccess()
             }
         }
     }
@@ -342,9 +351,9 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      *
      * @param getQuote The code that takes in a [Quote] element and processes it once a random quote is selected.
      */
-    fun getRandomQuote(getQuote: (Quote) -> Unit){
+    fun getRandomQuote(getQuote: (Quote) -> Unit) {
 
-        if(localDatabaseSize != 0){
+        if (localDatabaseSize != 0) {
             log("retrieving random quote from local db")
             getRandomQuoteFromLocalDatabase(getQuote)
             return
@@ -365,7 +374,7 @@ class FirebaseManager(private val context: Context, private val onIsReady: (Fire
      *
      * @param getQuote The code that takes in a [Quote] element and processes it once a random quote is selected.
      */
-    private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit){
+    private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit) {
         mainActivity?.lifecycleScope?.launch {
             quoteDao?.getAll().also {
                 //log("getAll() returns $it")
@@ -393,6 +402,7 @@ private fun parseQuote(documentSnapshot: DocumentSnapshot): Quote {
         category = documentSnapshot["category"] as String,
         quote = documentSnapshot["quote"] as String,
         quoteUrl = documentSnapshot["quote_url"] as String,
-        imageUrl = documentSnapshot["image_url"] as String
+        imageUrl = documentSnapshot["image_url"] as String,
+        isFavorite = false
     )
 }

@@ -64,6 +64,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import com.emil.dailyquotes.room.Migration1to2
 import com.emil.dailyquotes.room.QuoteDatabase
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
@@ -88,8 +89,6 @@ const val ROUTE_ACCOUNT = "account"
 const val ROUTE_DBMANAGER = "db_manager"
 
 var mainActivity: MainActivity? = null
-var preferenceManager: PreferenceManager? = null
-var quoteDatabase: QuoteDatabase? = null
 
 var csvImportLauncher: ActivityResultLauncher<Intent>? = null
 
@@ -122,18 +121,18 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         mainActivity = this
-        quoteDatabase = Room.databaseBuilder(
+        val quoteDatabase = Room.databaseBuilder(
             applicationContext,
             QuoteDatabase::class.java, "quotes-database"
         )
+            .addMigrations(Migration1to2)
             .allowMainThreadQueries()
             .build()
 
-        val firebaseManager = FirebaseManager(this) {
-            preferenceManager = PreferenceManager(it)
-            Log.d("MainActivity", "Trying to load daily quote")
-            preferenceManager?.loadDailyQuote()
-        }
+        val firebaseManager = FirebaseManager(this, quoteDatabase) {}
+        val preferenceManager = PreferenceManager {}
+        Log.d("MainActivity", "Trying to load daily quote")
+        preferenceManager.loadDailyQuote(firebaseManager, quoteDatabase.quoteDao())
 
         val dbManager = DBManager(firebaseManager)
 
@@ -182,10 +181,11 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     if (USE_PAGER_EXPERIMENTAL) {
-                        NavigationPager(firebaseManager)
+                        NavigationPager(firebaseManager, preferenceManager)
                     } else {
                         NavigationHost(
                             firebaseManager,
+                            preferenceManager,
                             dbManager,
                         )
                     }
@@ -204,7 +204,8 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun NavigationPager(
-        firebaseManager: FirebaseManager
+        firebaseManager: FirebaseManager,
+        preferenceManager: PreferenceManager
     ) {
         val pagerPages = remember { pages }
 
@@ -288,6 +289,7 @@ class MainActivity : ComponentActivity() {
                     HomePage(
                         modifier = pageModifier,
                         firebaseManager = firebaseManager,
+                        preferenceManager = preferenceManager
                     )
                 }
 
@@ -335,6 +337,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun NavigationHost(
         firebaseManager: FirebaseManager,
+        preferenceManager: PreferenceManager,
         dbManager: DBManager,
         backProgress: Float = 0f
     ) {
@@ -364,6 +367,7 @@ class MainActivity : ComponentActivity() {
                 content = {
                     HomePage(
                         firebaseManager = firebaseManager,
+                        preferenceManager = preferenceManager,
                         backProgress = backProgress
                     )
                 }
@@ -541,9 +545,10 @@ class MainActivity : ComponentActivity() {
 fun HomePage(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager,
+    preferenceManager: PreferenceManager,
     backProgress: Float = 0f
 ) {
-    val navigationItems = getNavigationDestinations(firebaseManager)
+    val navigationItems = getNavigationDestinations(firebaseManager, preferenceManager)
 
     val usePager = true
 
@@ -645,7 +650,12 @@ fun HomePage(
                             orientation = orientation
                         )
                     },
-                    content = { HomeScreen(firebaseManager = firebaseManager) }
+                    content = {
+                        HomeScreen(
+                            firebaseManager = firebaseManager,
+                            preferenceManager = preferenceManager
+                        )
+                    }
                 )
                 composable(
                     route = "profile",
