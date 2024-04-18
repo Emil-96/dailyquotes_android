@@ -63,16 +63,14 @@ fun HomeScreen(
     val interactionSource = remember{ MutableInteractionSource() }
     val vibrator = LocalHapticFeedback.current
 
+@Composable
+private fun DailyQuote(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager,
+    preferenceManager: PreferenceManager
+) {
     val quote = preferenceManager.quote.observeAsState()
     val name = firebaseManager.getName().observeAsState()
-
-    val showPlaceholder = quote.value?.quote?.isEmpty() ?: true
-
-    var showActionRow by remember {
-        mutableStateOf(true)
-    }
-
-    val transitionDurationMillis = 500
 
     val currentHours = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
@@ -86,7 +84,6 @@ fun HomeScreen(
 
     Column(
         modifier = modifier
-            .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
@@ -95,56 +92,88 @@ fun HomeScreen(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(horizontal = 8.dp)
         )
-        ElevatedCard(
+        QuoteCard(
+            quote = quote.value,
+            title = "Your quote for the day",
+            firebaseManager = firebaseManager,
+            startWithActionRow = true
+        )
+    }
+}
+
+@Composable
+fun QuoteCard(
+    modifier: Modifier = Modifier,
+    quote: Quote?,
+    title: String = "",
+    firebaseManager: FirebaseManager,
+    startWithActionRow: Boolean = false
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val vibrator = LocalHapticFeedback.current
+
+    val showPlaceholder = quote?.quote?.isEmpty() ?: true
+
+    var showActionRow by remember {
+        mutableStateOf(startWithActionRow)
+    }
+
+    val transitionDurationMillis = 500
+
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .animateContentSize()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = {
+                    vibrator.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    showActionRow = !showActionRow
+                }),
+        shape = RoundedCornerShape(24.dp)
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .animateContentSize()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = {
-                        vibrator.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        showActionRow = !showActionRow
-                    }),
-            shape = RoundedCornerShape(24.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp),
+            //verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 24.dp),
-                //verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            if(title != "") {
                 Text(
-                    text = "Your quote for the day:",
+                    text = title,
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.alpha(.5f)
+                    modifier = Modifier.alpha(.5f).padding(bottom = 16.dp)
                 )
-                Text(
-                    text = "" + quote.value?.quote,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier
-                        .alpha(if (showPlaceholder) .2f else 1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .placeholder(
-                            visible = showPlaceholder,
-                            color = Color.Transparent,
-                            highlight = PlaceholderHighlight.shimmer()
-                        )
-                        .defaultMinSize(minHeight = if (showPlaceholder) 86.dp else 0.dp)
-                        .padding(top = 16.dp)
-                        .fillMaxWidth()
-                )
-                AnimatedVisibility(
-                    visible = showActionRow,
-                    enter = slideInVertically(
-                        initialOffsetY = { -it },
-                        animationSpec = tween(durationMillis = transitionDurationMillis)
-                    ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
-                ) {
-                    quote.value?.let {
-                        ActionRow(modifier = Modifier.padding(top = 16.dp), firebaseManager = firebaseManager, quote = it)
-                    }
+            }
+            Text(
+                text = "" + quote?.quote,
+                style = MaterialTheme.typography.headlineMedium,
+                fontStyle = FontStyle.Italic,
+                modifier = Modifier
+                    .alpha(if (showPlaceholder) .2f else 1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .placeholder(
+                        visible = showPlaceholder,
+                        color = Color.Transparent,
+                        highlight = PlaceholderHighlight.shimmer()
+                    )
+                    .defaultMinSize(minHeight = if (showPlaceholder) 86.dp else 0.dp)
+                    .fillMaxWidth()
+            )
+            AnimatedVisibility(
+                visible = showActionRow && !showPlaceholder,
+                enter = slideInVertically(
+                    initialOffsetY = { -it },
+                    animationSpec = tween(durationMillis = transitionDurationMillis)
+                ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
+            ) {
+                quote?.let {
+                    ActionRow(
+                        modifier = Modifier.padding(top = 16.dp),
+                        firebaseManager = firebaseManager,
+                        quote = it
+                    )
                 }
             }
         }
@@ -156,7 +185,7 @@ private fun ActionRow(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager,
     quote: Quote,
-){
+) {
     Row(
         modifier = modifier
             .fillMaxWidth(),
