@@ -1,9 +1,16 @@
 package com.emil.dailyquotes
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.icu.util.Calendar
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
@@ -29,9 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import com.emil.dailyquotes.room.Quote
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.placeholder.placeholder
@@ -41,18 +53,24 @@ import com.google.accompanist.placeholder.placeholder
  *
  * @param modifier A [Modifier] to adjust the content.
  */
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    firebaseManager: FirebaseManager
+    firebaseManager: FirebaseManager,
+    preferenceManager: PreferenceManager
 ) {
+    val interactionSource = remember{ MutableInteractionSource() }
+    val vibrator = LocalHapticFeedback.current
 
-    val quote = preferenceManager?.quote?.observeAsState()
+    val quote = preferenceManager.quote.observeAsState()
     val name = firebaseManager.getName().observeAsState()
 
-    var favorite by remember{ mutableStateOf(false) }
+    val showPlaceholder = quote.value?.quote?.isEmpty() ?: true
 
-    val showPlaceholder = quote?.value?.quote?.isEmpty() ?: true
+    var showActionRow by remember {
+        mutableStateOf(true)
+    }
 
     val transitionDurationMillis = 500
 
@@ -80,16 +98,21 @@ fun HomeScreen(
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(
-                    animationSpec = tween(transitionDurationMillis)
-                ),
+                .clip(RoundedCornerShape(24.dp))
+                .animateContentSize()
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = {
+                        vibrator.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showActionRow = !showActionRow
+                    }),
             shape = RoundedCornerShape(24.dp)
         ) {
             Column(
                 modifier = Modifier
                     .padding(horizontal = 24.dp, vertical = 24.dp),
-                //.animateContentSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                //verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
                     text = "Your quote for the day:",
@@ -97,7 +120,7 @@ fun HomeScreen(
                     modifier = Modifier.alpha(.5f)
                 )
                 Text(
-                    text = "" + quote?.value?.quote,
+                    text = "" + quote.value?.quote,
                     style = MaterialTheme.typography.headlineMedium,
                     fontStyle = FontStyle.Italic,
                     modifier = Modifier
@@ -109,35 +132,129 @@ fun HomeScreen(
                             highlight = PlaceholderHighlight.shimmer()
                         )
                         .defaultMinSize(minHeight = if (showPlaceholder) 86.dp else 0.dp)
+                        .padding(top = 16.dp)
                         .fillMaxWidth()
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
+                AnimatedVisibility(
+                    visible = showActionRow,
+                    enter = slideInVertically(
+                        initialOffsetY = { -it },
+                        animationSpec = tween(durationMillis = transitionDurationMillis)
+                    ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
                 ) {
-                    FilledIconToggleButton(
-                        checked = favorite,
-                        onCheckedChange = {favorite = !favorite}
-                    ) {
-                        Icon(
-                            painter = painterResource(id = if(favorite) R.drawable.ic_star_filled else R.drawable.ic_star),
-                            contentDescription = "mark as favorite"
-                        )
-                    }
-                    IconButton(onClick = {
-                        val shareIntent = Intent(Intent.ACTION_SEND)
-                        shareIntent.type = "text/plain"
-                        shareIntent.putExtra(Intent.EXTRA_TEXT, "\"" + quote?.value?.quote + "\"")
-                        mainActivity?.startActivity(Intent.createChooser(shareIntent, "Share quote via..."))
-                    }) {
-                        Icon(
-                            // TODO: Icon is too big, needs to be changed
-                            painter = painterResource(id = R.drawable.ic_share),
-                            contentDescription = "share"
-                        )
+                    quote.value?.let {
+                        ActionRow(modifier = Modifier.padding(top = 16.dp), firebaseManager = firebaseManager, quote = it)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActionRow(
+    modifier: Modifier = Modifier,
+    firebaseManager: FirebaseManager,
+    quote: Quote,
+){
+    Row(
+        modifier = modifier
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.End)
+    ) {
+        FavoriteButton(
+            firebaseManager = firebaseManager,
+            quote = quote,
+        )
+        IconButton(onClick = {
+            val shareIntent = Intent(Intent.ACTION_SEND)
+            shareIntent.type = "text/plain"
+            shareIntent.putExtra(
+                Intent.EXTRA_TEXT,
+                "\"" + quote.quote.trim() + "\""
+            )
+            mainActivity?.startActivity(
+                Intent.createChooser(
+                    shareIntent,
+                    "Share quote via..."
+                )
+            )
+        }) {
+            Icon(
+                // TODO: Icon is too big, needs to be changed
+                painter = painterResource(id = R.drawable.ic_share),
+                contentDescription = "share"
+            )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteButton(
+    firebaseManager: FirebaseManager,
+    quote: Quote,
+) {
+
+    var isFavorite by remember {
+        mutableStateOf(quote.isFavorite)
+    }
+
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
+
+    FilledIconToggleButton(
+        checked = isFavorite,
+        onCheckedChange = { checked ->
+            if (!firebaseManager.isSignedIn()) {
+                mainActivity?.navigateTo(ROUTE_LOGIN)
+            } else if (checked) {
+                isLoading = true
+                firebaseManager.addToFavorites(
+                    quote,
+                    onSuccess = {
+                        isLoading = false
+                        isFavorite = true
+                    },
+                    onFailure = {
+                        isLoading = false
+                        mainActivity?.showMessage(
+                            message = "Couldn't save favorite",
+                            isError = true
+                        )
+                    }
+                )
+            } else {
+                isLoading = true
+                firebaseManager.removeFromFavorites(
+                    quote,
+                    onSuccess = {
+                        isLoading = false
+                        isFavorite = false
+                    },
+                    onFailure = {
+                        isLoading = false
+                        mainActivity?.showMessage(
+                            "Failed to remove favorite",
+                            true
+                        )
+                    }
+                )
+            }
+        }
+    ) {
+        AnimatedContent(targetState = isLoading, label = "") { loading ->
+            if (!loading) {
+                Icon(
+                    painter = painterResource(id = if (isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star),
+                    contentDescription = "mark as favorite"
+                )
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(8.dp),
+                    strokeWidth = 3.dp,
+                    strokeCap = StrokeCap.Round
+                )
             }
         }
     }

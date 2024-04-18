@@ -387,6 +387,51 @@ class FirebaseManager(
         }
     }
 
+    fun addToFavorites(quote: Quote, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        log("adding ${quote.id} to favorites")
+
+        // TODO: need to also save favorites locally
+
+        getCurrentUser()?.let { user ->
+            db.collection("users").document(user.uid)
+                .update("favorites", FieldValue.arrayUnion(quote.id))
+                .addOnSuccessListener {
+                    quote.isFavorite = true
+                    mainActivity?.lifecycleScope?.launch {
+                        log("trying to save favorite locally")
+                        quoteDao?.update(quote)
+                        log("successfully uploaded favorite")
+                        onSuccess()
+                    }
+                }
+                .addOnFailureListener {
+                    log("failed to upload favorite")
+                    onFailure()
+                }
+        }
+    }
+
+    fun removeFromFavorites(quote: Quote, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        log("removing ${quote.id} from favorites")
+
+        getCurrentUser()?.let { user ->
+            db.collection("users").document(user.uid)
+                .update("favorites", FieldValue.arrayRemove(quote.id))
+                .addOnSuccessListener {
+                    quote.isFavorite = true
+                    mainActivity?.lifecycleScope?.launch {
+                        quoteDao?.update(quote)
+                        log("successfully removed favorite")
+                        onSuccess()
+                    }
+                }
+                .addOnFailureListener {
+                    log("failed to remove favorite")
+                    onFailure()
+                }
+        }
+    }
+
 }
 
 /**
