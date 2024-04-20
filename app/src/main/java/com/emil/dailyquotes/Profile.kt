@@ -115,7 +115,7 @@ private fun ProfileView(
             }
             Spacer(modifier = Modifier.weight(1f))
             OutlinedButton(
-                onClick = { /*TODO*/ }
+                onClick = { mainActivity?.navigateTo(ROUTE_EDIT_PROFILE) }
             ) {
                 Text(text = "Edit profile")
             }

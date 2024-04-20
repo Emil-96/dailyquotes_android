@@ -10,11 +10,16 @@ import android.util.Log
 import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.EaseInCirc
+import androidx.compose.animation.core.EaseOutCirc
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -89,6 +94,7 @@ const val ROUTE_LOADING = "loading"
 const val ROUTE_ACCOUNT = "account"
 const val ROUTE_DBMANAGER = "db_manager"
 const val ROUTE_FAVORITES = "favorites"
+const val ROUTE_EDIT_PROFILE = "edit_profile"
 
 var mainActivity: MainActivity? = null
 
@@ -360,14 +366,12 @@ class MainActivity : ComponentActivity() {
                 route = ROUTE_HOME,
                 enterTransition = {
                     navEnterTransition(
-                        direction = DIRECTION_LEFT,
-                        orientation = orientation
+                        direction = if(initialState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
                     )
                 },
                 exitTransition = {
                     navExitTransition(
-                        direction = DIRECTION_LEFT,
-                        orientation = orientation
+                        direction = if(targetState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
                     )
                 },
                 content = {
@@ -397,9 +401,14 @@ class MainActivity : ComponentActivity() {
             getNavDestination(this, ROUTE_LOADING) { LoadingScreen() }
             getNavDestination(
                 this,
-                orientation,
                 ROUTE_FAVORITES
             ) { FavoritePage(firebaseManager = firebaseManager) }
+            getNavDestination(
+                this,
+                ROUTE_EDIT_PROFILE,
+                slideDirection = Direction.BOTTOM,
+                enterEasing = EaseOutCirc,
+            ){ EditProfile(firebaseManager = firebaseManager) }
         }
     }
 
