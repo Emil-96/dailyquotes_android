@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -18,23 +19,26 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.EaseInCirc
 import androidx.compose.animation.core.EaseOutCirc
 import androidx.compose.animation.core.Easing
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,6 +94,7 @@ enum class Direction {
 
 const val ROUTE_HOME = "home"
 const val ROUTE_SETTINGS = "settings"
+const val ROUTE_PROFILE = "profile"
 const val ROUTE_LOGIN = "login"
 const val ROUTE_LOADING = "loading"
 const val ROUTE_ACCOUNT = "account"
@@ -366,19 +372,18 @@ class MainActivity : ComponentActivity() {
                 route = ROUTE_HOME,
                 enterTransition = {
                     navEnterTransition(
-                        direction = if(initialState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
+                        direction = if (initialState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
                     )
                 },
                 exitTransition = {
                     navExitTransition(
-                        direction = if(targetState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
+                        direction = if (targetState.destination.route == ROUTE_EDIT_PROFILE) Direction.NONE else Direction.LEFT,
                     )
                 },
                 content = {
                     HomePage(
                         firebaseManager = firebaseManager,
                         preferenceManager = preferenceManager,
-                        backProgress = backProgress
                     )
                 }
             )
@@ -408,7 +413,7 @@ class MainActivity : ComponentActivity() {
                 ROUTE_EDIT_PROFILE,
                 slideDirection = Direction.BOTTOM,
                 enterEasing = EaseOutCirc,
-            ){ EditProfile(firebaseManager = firebaseManager) }
+            ) { EditProfile(firebaseManager = firebaseManager) }
         }
     }
 
@@ -425,14 +430,18 @@ class MainActivity : ComponentActivity() {
             route = route,
             enterTransition = {
                 navEnterTransition(
-                    direction = if(slideDirection == Direction.DEFAULT) getNavEnterDirection(initialState.destination) else slideDirection,
+                    direction = if (slideDirection == Direction.DEFAULT) getNavEnterDirection(
+                        initialState.destination
+                    ) else slideDirection,
                     easing = enterEasing,
                     durationMillis = transitionDurationMillis
                 )
             },
             exitTransition = {
                 navExitTransition(
-                    direction = if(slideDirection == Direction.DEFAULT) getNavExitDirection(initialState.destination) else slideDirection,
+                    direction = if (slideDirection == Direction.DEFAULT) getNavExitDirection(
+                        initialState.destination
+                    ) else slideDirection,
                     easing = exitEasing,
                     durationMillis = (transitionDurationMillis * .6).toInt()
                 )
@@ -570,23 +579,22 @@ fun HomePage(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager,
     preferenceManager: PreferenceManager,
-    backProgress: Float = 0f
 ) {
-    val navigationItems = getNavigationDestinations(firebaseManager, preferenceManager)
+    val localConfig = LocalConfiguration.current
+    val orientation = localConfig.orientation
+    val screenWidth = with(LocalDensity.current) { localConfig.screenWidthDp.dp.toPx() }
+    val screenHeight = with(LocalDensity.current) { localConfig.screenHeightDp.dp.toPx() }
 
-    val usePager = true
+    val navigationItems = getNavigationDestinations(firebaseManager, preferenceManager, orientation)
 
     val pagerState = rememberPagerState(pageCount = { navigationItems.size })
 
     val navController = rememberNavController()
     val currentRoute = currentRoute(navController = navController)
-    val localConfig = LocalConfiguration.current
-    val orientation = localConfig.orientation
-    val screenWidth = with(LocalDensity.current) { localConfig.screenWidthDp.dp.toPx() }
 
     val scope = rememberCoroutineScope()
 
-    if(pagerState.currentPage != 0) {
+    if (pagerState.currentPage != 0) {
         BackHandler {
             scope.launch {
                 pagerState.animateScrollToPage(0)
@@ -594,104 +602,194 @@ fun HomePage(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        bottomBar = {
-            NavigationBar {
-                navigationItems.forEachIndexed { index, item ->
-                    val navItem = item.getNavigationItem()
-                    NavigationBarItem(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            if (currentRoute != navItem.route) {
-                                if (usePager) {
-                                    scope.launch {
-                                        pagerState.animateScrollBy(
-                                            value = screenWidth * (index - pagerState.currentPage),
-                                            animationSpec = tween(durationMillis = 350)
-                                        )
-                                    }
-                                } else {
-                                    navController.navigate(navItem.route) {
-                                        launchSingleTop = true
-                                        popUpTo("home")
-                                    }
-                                }
-                            }
-                        },
-                        icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
-                        label = { Text(text = navItem.label) }
-                    )
-                }
-            }
-        }
-    ) { paddingValues ->
-        if (usePager) {
-            HorizontalPager(
-                modifier = Modifier
-                    .padding(paddingValues),
-                state = pagerState,
-                beyondBoundsPageCount = 1
-            ) { page ->
-                navigationItems[page].getContent(
-                    modifier = Modifier
-                        .graphicsLayer {
-                            val back = 1f - backProgress
-                            val pageOffset = (
-                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                                    ).absoluteValue
-                            alpha = back * (1f - 2 * pageOffset).coerceIn(0f, 1f)
+    var position by remember {
+        mutableIntStateOf(0)
+    }
 
-                            val direction = (if (page % 2 == 0) 1f else -1f)
-                            val offsetDerivedFromProgress =
-                                EaseInCirc.transform(pageOffset) * screenWidth
-                            val completePageOffset = screenWidth * direction * pageOffset
-                            translationX =
-                                    //(backProgress * screenWidth / 4) -
-                                (completePageOffset - direction * offsetDerivedFromProgress)
-                        }
-                )()
+    if(orientation == Configuration.ORIENTATION_PORTRAIT) {
+        Scaffold(
+            bottomBar = {
+                BottomBar(
+                    pagerState = pagerState,
+                    //position = (position-1).coerceIn(0,1),
+                    setPosition = { position = it * 2 },
+                    navigationItems = navigationItems,
+                    currentRoute = currentRoute,
+                    screenWidth = screenWidth
+                )
             }
-        } else {
-            NavHost(
-                navController = navController,
+        ) { paddingValues ->
+            PortraitPager(
                 modifier = Modifier.padding(paddingValues),
-                startDestination = "home"
-            ) {
-                composable(
-                    route = "home",
-                    enterTransition = {
-                        navEnterTransition(
-                            direction = Direction.LEFT,
-                        )
-                    },
-                    exitTransition = {
-                        navExitTransition(
-                            direction = Direction.LEFT,
-                        )
-                    },
-                    content = {
-                        HomeScreen(
-                            firebaseManager = firebaseManager,
-                            preferenceManager = preferenceManager
-                        )
-                    }
-                )
-                composable(
-                    route = "profile",
-                    enterTransition = {
-                        navEnterTransition(
-                            direction = Direction.RIGHT,
-                        )
-                    },
-                    exitTransition = {
-                        navExitTransition(
-                            direction = Direction.RIGHT,
-                        )
-                    },
-                    content = { ProfilePage(firebaseManager = firebaseManager) }
-                )
+                pagerState, navigationItems, screenWidth
+            )
+        }
+    }else{
+        Row(
+            modifier = Modifier.safeContentPadding()
+        ) {
+            SideRail(
+                pagerState = pagerState,
+                setPosition = { position = it },
+                navigationItems = navigationItems,
+                currentRoute = currentRoute,
+                screenWidth = screenWidth
+            )
+            LandscapePager(
+                pagerState = pagerState,
+                navigationItems = navigationItems,
+                screenHeight = screenHeight
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PortraitPager(
+    modifier: Modifier = Modifier,
+    pagerState: PagerState,
+    navigationItems: List<NavigationDestination>,
+    screenWidth: Float
+) {
+    HorizontalPager(
+        modifier = modifier,
+        state = pagerState,
+        beyondBoundsPageCount = 1
+    ) { page ->
+        navigationItems[page].getContent(
+            modifier = Modifier
+                .graphicsLayer {
+                    val pageOffset = (
+                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            ).absoluteValue
+                    alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
+
+                    val direction = if(pagerState.currentPageOffsetFraction >= 0) 1f else -1f
+                    val offsetDerivedFromProgress =
+                        EaseInCirc.transform(pageOffset) * screenWidth
+                    val completePageOffset = screenWidth * direction * pageOffset
+                    translationX =
+                            //(backProgress * screenWidth / 4) -
+                        (completePageOffset - direction * offsetDerivedFromProgress)
+                }
+        )()
+    }
+}
+
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LandscapePager(
+    modifier: Modifier = Modifier,
+    pagerState: PagerState,
+    navigationItems: List<NavigationDestination>,
+    screenHeight: Float
+){
+    VerticalPager(
+        state = pagerState,
+        beyondBoundsPageCount = 1
+    ) { page ->
+        navigationItems[page].getContent(
+            modifier = Modifier
+                .graphicsLayer {
+                    val pageOffset = (
+                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            ).absoluteValue
+                    alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
+
+                    val direction = if(pagerState.currentPageOffsetFraction >= 0) 1f else -1f
+                    val offsetDerivedFromProgress =
+                        EaseInCirc.transform(pageOffset) * screenHeight
+                    val completePageOffset = screenHeight * direction * pageOffset
+                    translationY = completePageOffset - direction * offsetDerivedFromProgress
+                }
+        )()
+    }
+}
+
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun BottomBar(
+    pagerState: PagerState,
+    setPosition: (Int) -> Unit,
+    navigationItems: List<NavigationDestination>,
+    currentRoute: String,
+    screenWidth: Float
+){
+    val scope = rememberCoroutineScope()
+
+    NavigationBar {
+        navigationItems.forEachIndexed { index, item ->
+            val navItem = item.getNavigationItem()
+            val selected = pagerState.currentPage == index
+            if(selected){
+                setPosition(index)
             }
+            NavigationBarItem(
+                selected = selected,
+                onClick = {
+                    if (currentRoute != navItem.route) {
+                            scope.launch {
+                                pagerState.animateScrollToPage(page = index)
+                                /*
+                                pagerState.animateScrollBy(
+                                    value = screenWidth * (index - pagerState.currentPage),
+                                    animationSpec = tween(durationMillis = 350)
+                                )
+                                */
+                            }
+                    }
+                },
+                icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
+                label = { Text(text = navItem.label) }
+            )
+        }
+    }
+}
+
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun SideRail(
+    pagerState: PagerState,
+    setPosition: (Int) -> Unit,
+    navigationItems: List<NavigationDestination>,
+    currentRoute: String,
+    screenWidth: Float
+){
+    val scope = rememberCoroutineScope()
+
+    NavigationRail {
+        Spacer(modifier = Modifier.weight(1f))
+        navigationItems.forEachIndexed { index, item ->
+            val navItem = item.getNavigationItem()
+            val selected = pagerState.currentPage == index
+            if(selected){
+                setPosition(index)
+            }
+            NavigationRailItem(
+                selected = pagerState.currentPage == index,
+                onClick = {
+                    if (currentRoute != navItem.route) {
+                        scope.launch {
+                            pagerState.animateScrollToPage(
+                                page = index
+                            )
+                            /*
+                            pagerState.animateScrollBy(
+                                value = screenWidth * (index - pagerState.currentPage),
+                                animationSpec = tween(durationMillis = 350)
+                            )
+                             */
+                        }
+                    }
+                },
+                icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
+                label = { Text(text = navItem.label) }
+            )
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -704,7 +802,7 @@ fun HomePage(
  * @return The current back stack destination.
  */
 @Composable
-fun currentRoute(navController: NavController): String? {
+fun currentRoute(navController: NavController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    return navBackStackEntry?.destination?.route
+    return "" + navBackStackEntry?.destination?.route
 }

@@ -1,6 +1,7 @@
 package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -26,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.emil.dailyquotes.room.Quote
@@ -42,7 +47,7 @@ fun FavoritePager(
     val scope = rememberCoroutineScope()
 
     val emptyQuoteList: List<Quote> = listOf()
-    var favorites by remember{ mutableStateOf(emptyQuoteList) }
+    var favorites by remember { mutableStateOf(emptyQuoteList) }
 
     scope.launch {
         favorites = firebaseManager.getFavorites()
@@ -104,12 +109,15 @@ fun FavoritePager(
 @Composable
 fun FavoritePage(
     modifier: Modifier = Modifier,
-    firebaseManager: FirebaseManager
-){
+    firebaseManager: FirebaseManager,
+    showBackIcon: Boolean = true,
+) {
     val scope = rememberCoroutineScope()
 
+    val screenWidth = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp }
+
     val emptyQuoteList: List<Quote> = listOf()
-    var favorites by remember{ mutableStateOf(emptyQuoteList) }
+    var favorites by remember { mutableStateOf(emptyQuoteList) }
 
     scope.launch {
         favorites = firebaseManager.getFavorites()
@@ -117,18 +125,35 @@ fun FavoritePage(
     val listState = rememberLazyListState()
 
     Column {
-        TopNavBar(title = "Favorites")
-        LazyColumn(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            state = listState
-        ) {
-            items(favorites.size) { index ->
-                QuoteCard(
-                    quote = favorites[index],
-                    firebaseManager = firebaseManager,
-                    startWithActionRow = true
-                )
+        TopNavBar(title = "Favorites", showBackButton = showBackIcon)
+        if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                state = listState
+            ) {
+                items(favorites.size) { index ->
+                    QuoteCard(
+                        quote = favorites[index],
+                        firebaseManager = firebaseManager,
+                        startWithActionRow = true
+                    )
+                }
+            }
+        } else {
+            LazyRow(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                state = listState
+            ) {
+                items(favorites.size) { index ->
+                    QuoteCard(
+                        modifier = Modifier.widthIn(max = screenWidth / 2),
+                        quote = favorites[index],
+                        firebaseManager = firebaseManager,
+                        startWithActionRow = true
+                    )
+                }
             }
         }
     }

@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -27,33 +28,64 @@ import androidx.compose.ui.res.painterResource
 val EASING_ENTER = FastOutSlowInEasing
 val EASING_EXIT = LinearEasing
 
-fun getNavigationDestinations(firebaseManager: FirebaseManager, preferenceManager: PreferenceManager): List<NavigationDestination>{
-    return listOf(
-        NavigationDestination(
-            navItem = BottomNavigationItem.HomeScreenItem,
-            content = { HomeScreen(firebaseManager = firebaseManager, preferenceManager = preferenceManager) }
-        ),
-        NavigationDestination(
-            navItem = BottomNavigationItem.ProfileScreenItem,
-            content = { ProfilePage(firebaseManager = firebaseManager) }
+fun getNavigationDestinations(
+    firebaseManager: FirebaseManager,
+    preferenceManager: PreferenceManager,
+    orientation: Int
+): List<NavigationDestination> {
+    return if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+        listOf(
+            NavigationDestination(
+                navItem = BottomNavigationItem.HomeScreenItem,
+                content = {
+                    HomeScreen(
+                        firebaseManager = firebaseManager,
+                        preferenceManager = preferenceManager
+                    )
+                }
+            ),
+            NavigationDestination(
+                navItem = BottomNavigationItem.ProfileScreenItem,
+                content = { ProfilePage(firebaseManager = firebaseManager) }
+            )
         )
-    )
+    } else {
+        listOf(
+            NavigationDestination(
+                navItem = BottomNavigationItem.HomeScreenItem,
+                content = {
+                    HomeScreen(
+                        firebaseManager = firebaseManager,
+                        preferenceManager = preferenceManager
+                    )
+                }
+            ),
+            NavigationDestination(
+                navItem = BottomNavigationItem.FavoriteScreenItem,
+                content = { FavoritePage(firebaseManager = firebaseManager, showBackIcon = false) }
+            ),
+            NavigationDestination(
+                navItem = BottomNavigationItem.ProfileScreenItem,
+                content = { ProfilePage(firebaseManager = firebaseManager) }
+            )
+        )
+    }
 }
 
 class NavigationDestination(
     private val navItem: BottomNavigationItem,
     private val content: @Composable () -> Unit
-){
+) {
 
-    fun getNavigationItem(): BottomNavigationItem{
+    fun getNavigationItem(): BottomNavigationItem {
         return navItem
     }
 
-    fun getContent(modifier: Modifier = Modifier): @Composable () -> Unit{
+    fun getContent(modifier: Modifier = Modifier): @Composable () -> Unit {
         return {
             Box(
                 modifier = modifier
-            ){
+            ) {
                 content()
             }
         }
@@ -63,13 +95,13 @@ class NavigationDestination(
 /**
  * Describes different items to be used in the bottom navigation bar on the home screen.
  */
-sealed class BottomNavigationItem(val route: String, val label: String, val icon: Int){
+sealed class BottomNavigationItem(val route: String, val label: String, val icon: Int) {
 
     /**
      * The item leading to the home page.
      */
-    object HomeScreenItem: BottomNavigationItem(
-        route = "home",
+    object HomeScreenItem : BottomNavigationItem(
+        route = ROUTE_HOME,
         label = "Home",
         icon = R.drawable.ic_quote
     )
@@ -77,10 +109,16 @@ sealed class BottomNavigationItem(val route: String, val label: String, val icon
     /**
      * The item leading to the profile page.
      */
-    object ProfileScreenItem: BottomNavigationItem(
-        route = "profile",
+    object ProfileScreenItem : BottomNavigationItem(
+        route = ROUTE_PROFILE,
         label = "Profile",
         icon = R.drawable.ic_person
+    )
+
+    object FavoriteScreenItem : BottomNavigationItem(
+        route = ROUTE_FAVORITES,
+        label = "Favorites",
+        icon = R.drawable.ic_star_filled
     )
 }
 
@@ -92,10 +130,15 @@ sealed class BottomNavigationItem(val route: String, val label: String, val icon
  *
  * @return The desired [EnterTransition] that can directly be applied to a destination.
  */
-fun navEnterTransition(durationMillis: Int = 350, direction: Direction, easing: Easing = EASING_ENTER) : EnterTransition {
-    val directionMultiplier = if(direction == Direction.NONE) 0 else if(direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
+fun navEnterTransition(
+    durationMillis: Int = 350,
+    direction: Direction,
+    easing: Easing = EASING_ENTER
+): EnterTransition {
+    val directionMultiplier =
+        if (direction == Direction.NONE) 0 else if (direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
     val slideHorizontally = direction == Direction.LEFT || direction == Direction.RIGHT
-    if(slideHorizontally) {
+    if (slideHorizontally) {
         return slideInHorizontally(
             animationSpec = tween(
                 durationMillis = durationMillis,
@@ -104,7 +147,7 @@ fun navEnterTransition(durationMillis: Int = 350, direction: Direction, easing: 
         ) { fullWidth ->
             directionMultiplier * fullWidth / 20
         } + fadeIn(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
-    }else{
+    } else {
         return slideInVertically(
             animationSpec = tween(
                 durationMillis = durationMillis,
@@ -124,10 +167,15 @@ fun navEnterTransition(durationMillis: Int = 350, direction: Direction, easing: 
  *
  * @return The desired [ExitTransition] that can directly be applied to a destination.
  */
-fun navExitTransition(durationMillis: Int = 200, direction: Direction, easing: Easing = EASING_EXIT) : ExitTransition {
-    val directionMultiplier = if(direction == Direction.NONE) 0 else if(direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
+fun navExitTransition(
+    durationMillis: Int = 200,
+    direction: Direction,
+    easing: Easing = EASING_EXIT
+): ExitTransition {
+    val directionMultiplier =
+        if (direction == Direction.NONE) 0 else if (direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
     val slideHorizontally = direction == Direction.LEFT || direction == Direction.RIGHT
-    if(slideHorizontally) {
+    if (slideHorizontally) {
         return slideOutHorizontally(
             animationSpec = tween(
                 durationMillis = durationMillis,
@@ -136,7 +184,7 @@ fun navExitTransition(durationMillis: Int = 200, direction: Direction, easing: E
         ) { fullWidth ->
             directionMultiplier * fullWidth / 20
         } + fadeOut(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
-    }else{
+    } else {
         return slideOutVertically(
             animationSpec = tween(
                 durationMillis = durationMillis,
@@ -155,20 +203,25 @@ fun navExitTransition(durationMillis: Int = 200, direction: Direction, easing: E
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopNavBar(title: String){
+fun TopNavBar(
+    title: String,
+    showBackButton: Boolean = true
+) {
     TopAppBar(
         title = { Text(text = title) },
         navigationIcon = {
-            IconButton(
-                onClick = {
-                    Log.d("TopNavBar", "tapped on back icon")
-                    mainActivity?.back()
+            if(showBackButton) {
+                IconButton(
+                    onClick = {
+                        Log.d("TopNavBar", "tapped on back icon")
+                        mainActivity?.back()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_back),
+                        contentDescription = "back"
+                    )
                 }
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_back),
-                    contentDescription = "back"
-                )
             }
         })
 }

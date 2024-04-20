@@ -2,6 +2,7 @@ package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.icu.util.Calendar
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -39,6 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -60,12 +62,13 @@ fun HomeScreen(
     firebaseManager: FirebaseManager,
     preferenceManager: PreferenceManager
 ) {
+    val orientation = LocalConfiguration.current.orientation
     Column(
         modifier = modifier
             .fillMaxSize()
     ){
         DailyQuote(firebaseManager = firebaseManager, preferenceManager = preferenceManager)
-        if(firebaseManager.isSignedIn()) {
+        if(orientation == Configuration.ORIENTATION_PORTRAIT && firebaseManager.isSignedIn()) {
             FavoritePager(firebaseManager = firebaseManager)
         }
     }
