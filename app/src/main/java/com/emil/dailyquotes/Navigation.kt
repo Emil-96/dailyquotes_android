@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -22,6 +23,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+
+val EASING_ENTER = FastOutSlowInEasing
+val EASING_EXIT = LinearEasing
 
 fun getNavigationDestinations(firebaseManager: FirebaseManager, preferenceManager: PreferenceManager): List<NavigationDestination>{
     return listOf(
@@ -84,30 +88,31 @@ sealed class BottomNavigationItem(val route: String, val label: String, val icon
  * Returns the [EnterTransition] to be used when navigating between different screens.
  *
  * @param durationMillis The duration of the transition animation.
- * @param direction The direction the page should move. Takes either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
- * @param orientation The current screen orientation.
+ * @param direction The direction the page should move.
  *
  * @return The desired [EnterTransition] that can directly be applied to a destination.
  */
-fun navEnterTransition(durationMillis: Int = 350, direction: Int, orientation: Int) : EnterTransition {
-    if(orientation == Configuration.ORIENTATION_PORTRAIT) {
+fun navEnterTransition(durationMillis: Int = 350, direction: Direction, easing: Easing = EASING_ENTER) : EnterTransition {
+    val directionMultiplier = if(direction == Direction.NONE) 0 else if(direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
+    val slideHorizontally = direction == Direction.LEFT || direction == Direction.RIGHT
+    if(slideHorizontally) {
         return slideInHorizontally(
             animationSpec = tween(
                 durationMillis = durationMillis,
-                easing = FastOutSlowInEasing
+                easing = easing
             )
         ) { fullWidth ->
-            direction * fullWidth / 20
-        } + fadeIn(animationSpec = tween(durationMillis = (durationMillis * .8).toInt()))
+            directionMultiplier * fullWidth / 20
+        } + fadeIn(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
     }else{
         return slideInVertically(
             animationSpec = tween(
                 durationMillis = durationMillis,
-                easing = FastOutSlowInEasing
+                easing = easing
             )
         ) { fullHeight ->
-            direction * fullHeight / 20
-        } + fadeIn(animationSpec = tween(durationMillis = (durationMillis * .8).toInt()))
+            directionMultiplier * fullHeight / 10
+        } + fadeIn(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
     }
 }
 
@@ -115,30 +120,31 @@ fun navEnterTransition(durationMillis: Int = 350, direction: Int, orientation: I
  * Returns the [ExitTransition] to be used when navigating between different screens.
  *
  * @param durationMillis The duration of the transition animation.
- * @param direction The direction the page should move. Takes either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
- * @param orientation The current screen orientation.
+ * @param direction The direction the page should move.
  *
  * @return The desired [ExitTransition] that can directly be applied to a destination.
  */
-fun navExitTransition(durationMillis: Int = 200, direction: Int, orientation: Int) : ExitTransition {
-    if(orientation == Configuration.ORIENTATION_PORTRAIT) {
+fun navExitTransition(durationMillis: Int = 200, direction: Direction, easing: Easing = EASING_EXIT) : ExitTransition {
+    val directionMultiplier = if(direction == Direction.NONE) 0 else if(direction == Direction.LEFT || direction == Direction.TOP) -1 else 1
+    val slideHorizontally = direction == Direction.LEFT || direction == Direction.RIGHT
+    if(slideHorizontally) {
         return slideOutHorizontally(
             animationSpec = tween(
                 durationMillis = durationMillis,
-                easing = LinearEasing
+                easing = easing
             )
         ) { fullWidth ->
-            direction * fullWidth / 20
-        } + fadeOut(animationSpec = tween(durationMillis = (durationMillis * .8).toInt()))
+            directionMultiplier * fullWidth / 20
+        } + fadeOut(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
     }else{
         return slideOutVertically(
             animationSpec = tween(
                 durationMillis = durationMillis,
-                easing = LinearEasing
+                easing = easing
             )
         ) { fullHeight ->
-            direction * fullHeight / 20
-        } + fadeOut(animationSpec = tween(durationMillis = (durationMillis * .8).toInt()))
+            directionMultiplier * fullHeight / 10
+        } + fadeOut(animationSpec = tween(durationMillis = (durationMillis * .5).toInt()))
     }
 }
 

@@ -78,8 +78,9 @@ import kotlin.math.absoluteValue
 private const val USE_PAGER_EXPERIMENTAL = false
 private const val USE_BACK_PROGRESS_EXPERIMENTAL = false
 
-private const val DIRECTION_LEFT = -1
-private const val DIRECTION_RIGHT = 1
+enum class Direction {
+    DEFAULT, LEFT, RIGHT, BOTTOM, TOP, NONE
+}
 
 const val ROUTE_HOME = "home"
 const val ROUTE_SETTINGS = "settings"
@@ -157,9 +158,11 @@ class MainActivity : ComponentActivity() {
             }
              */
 
-            callback = object : OnBackPressedCallback(enabled = true) {
+            callback = object : OnBackPressedCallback(enabled = false) {
                 override fun handleOnBackPressed() {
-                    onBack?.let { it() }
+                    onBack?.let {
+                        it()
+                    }
                     //backProgress = 0f
                 }
 
@@ -348,7 +351,6 @@ class MainActivity : ComponentActivity() {
 
         pageNavController = rememberNavController()
         currentPage = currentRoute(navController = pageNavController)
-        val orientation = LocalConfiguration.current.orientation
 
         NavHost(
             navController = pageNavController,
@@ -378,25 +380,21 @@ class MainActivity : ComponentActivity() {
             )
             getNavDestination(
                 this,
-                orientation,
                 ROUTE_SETTINGS
             ) { SettingsPage(firebaseManager = firebaseManager) }
             getNavDestination(
                 this,
-                orientation,
                 ROUTE_LOGIN
             ) { LoginPage(firebaseManager = firebaseManager, context = this@MainActivity) }
             getNavDestination(
                 this,
-                orientation,
                 ROUTE_ACCOUNT
             ) { AccountPage(firebaseManager = firebaseManager) }
             getNavDestination(
                 this,
-                orientation,
                 ROUTE_DBMANAGER
             ) { DBManagerPage(dbManager = dbManager) }
-            getNavDestination(this, orientation, ROUTE_LOADING) { LoadingScreen() }
+            getNavDestination(this, ROUTE_LOADING) { LoadingScreen() }
             getNavDestination(
                 this,
                 orientation,
@@ -407,22 +405,27 @@ class MainActivity : ComponentActivity() {
 
     private fun getNavDestination(
         navGraphBuilder: NavGraphBuilder,
-        orientation: Int,
         route: String,
-        destination: @Composable() () -> Unit
+        slideDirection: Direction = Direction.DEFAULT,
+        enterEasing: Easing = EASING_ENTER,
+        exitEasing: Easing = EASING_EXIT,
+        transitionDurationMillis: Int = 350,
+        destination: @Composable() () -> Unit,
     ): Unit {
         return navGraphBuilder.composable(
             route = route,
             enterTransition = {
                 navEnterTransition(
-                    direction = getNavEnterDirection(initialState.destination),
-                    orientation = orientation
+                    direction = if(slideDirection == Direction.DEFAULT) getNavEnterDirection(initialState.destination) else slideDirection,
+                    easing = enterEasing,
+                    durationMillis = transitionDurationMillis
                 )
             },
             exitTransition = {
                 navExitTransition(
-                    direction = getNavExitDirection(initialState.destination),
-                    orientation = orientation
+                    direction = if(slideDirection == Direction.DEFAULT) getNavExitDirection(initialState.destination) else slideDirection,
+                    easing = exitEasing,
+                    durationMillis = (transitionDurationMillis * .6).toInt()
                 )
             },
             content = { destination() }
@@ -436,14 +439,14 @@ class MainActivity : ComponentActivity() {
      *
      * @param initialDestination The [NavDestination] from which the transition started.
      *
-     * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+     * @return The direction in which the page should be animated. Either [Direction.LEFT] or [Direction.RIGHT].
      */
-    private fun getNavEnterDirection(initialDestination: NavDestination): Int {
+    private fun getNavEnterDirection(initialDestination: NavDestination): Direction {
 
         return if (pageNavController.previousBackStackEntry?.destination?.route == initialDestination.route) {
-            DIRECTION_RIGHT
+            Direction.RIGHT
         } else {
-            DIRECTION_LEFT
+            Direction.LEFT
         }
     }
 
@@ -454,17 +457,17 @@ class MainActivity : ComponentActivity() {
      *
      * @param initialDestination The [NavDestination] from which the transition started.
      *
-     * @return The direction in which the page should be animated. Either [DIRECTION_LEFT] or [DIRECTION_RIGHT].
+     * @return The direction in which the page should be animated.
      */
     @SuppressLint("RestrictedApi")
-    private fun getNavExitDirection(initialDestination: NavDestination): Int {
+    private fun getNavExitDirection(initialDestination: NavDestination): Direction {
 
         val currentBackStack = pageNavController.currentBackStack.value
 
         return if (currentBackStack[currentBackStack.size - 2].destination.route == initialDestination.route) {
-            DIRECTION_LEFT
+            Direction.LEFT
         } else {
-            DIRECTION_RIGHT
+            Direction.RIGHT
         }
     }
 
@@ -475,7 +478,6 @@ class MainActivity : ComponentActivity() {
      */
     @OptIn(ExperimentalFoundationApi::class)
     fun navigateTo(route: String) {
-        onBack = null
         if (USE_PAGER_EXPERIMENTAL) {
             pages.add(route)
             composableCoroutineScope?.launch {
@@ -496,7 +498,6 @@ class MainActivity : ComponentActivity() {
     fun back() {
         Log.d("MainActivity", "going back")
         pageNavController.popBackStack()
-        onBack = null
         //callback.handleOnBackPressed()
         /*composableCoroutineScope?.launch {
             pagerState.animateScrollToPage(pages.lastIndex - 1)
@@ -505,16 +506,21 @@ class MainActivity : ComponentActivity() {
 
     fun backTo(route: String) {
         pageNavController.popBackStack(route, inclusive = false)
-        onBack = null
     }
 
+    /*
     fun setOnBack(function: () -> Unit) {
         onBack = function
+        callback.isEnabled = true
+        pageNavController.enableOnBackPressed(false)
     }
 
-    fun setCustomBackEnabled(enabled: Boolean) {
-        callback.isEnabled = enabled
+    fun removeOnBack(){
+        onBack = null
+        callback.isEnabled = true
+        pageNavController.enableOnBackPressed(false)
     }
+    */
 
     /**
      * Register the activity for the result when trying to import data from a CSV file.
@@ -571,15 +577,13 @@ fun HomePage(
 
     val scope = rememberCoroutineScope()
 
-    Log.d("HomePage", "Received back progress: $backProgress")
-
-    mainActivity?.setOnBack {
-        scope.launch {
-            pagerState.animateScrollToPage(0)
+    if(pagerState.currentPage != 0) {
+        BackHandler {
+            scope.launch {
+                pagerState.animateScrollToPage(0)
+            }
         }
     }
-
-    mainActivity?.setCustomBackEnabled(pagerState.currentPage != 0)
 
     Scaffold(
         modifier = modifier,
@@ -649,14 +653,12 @@ fun HomePage(
                     route = "home",
                     enterTransition = {
                         navEnterTransition(
-                            direction = DIRECTION_LEFT,
-                            orientation = orientation
+                            direction = Direction.LEFT,
                         )
                     },
                     exitTransition = {
                         navExitTransition(
-                            direction = DIRECTION_LEFT,
-                            orientation = orientation
+                            direction = Direction.LEFT,
                         )
                     },
                     content = {
@@ -670,14 +672,12 @@ fun HomePage(
                     route = "profile",
                     enterTransition = {
                         navEnterTransition(
-                            direction = DIRECTION_RIGHT,
-                            orientation = orientation
+                            direction = Direction.RIGHT,
                         )
                     },
                     exitTransition = {
                         navExitTransition(
-                            direction = DIRECTION_RIGHT,
-                            orientation = orientation
+                            direction = Direction.RIGHT,
                         )
                     },
                     content = { ProfilePage(firebaseManager = firebaseManager) }
