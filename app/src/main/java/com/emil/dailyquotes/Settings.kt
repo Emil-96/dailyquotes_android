@@ -171,11 +171,11 @@ private fun Setting(
  * Returns a dialog.
  *
  * @param dialogOptions The customization options of the dialog.
- * @param setVisibility The is the method that gets called when the visibility changes.
+ * @param setVisibility The function that gets called when the visibility changes.
  * It could handle [DIALOG_HIDDEN], [DIALOG_CONTENT], [DIALOG_OPTIONS] and [DIALOG_TEXT] but currently is only required to handle [DIALOG_HIDDEN].
  */
 @Composable
-private fun Dialog(
+fun Dialog(
     //modifier: Modifier = Modifier,
     dialogOptions: DialogOptions,
     setVisibility: (Int) -> Unit
