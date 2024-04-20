@@ -365,7 +365,8 @@ private fun TabTitle(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun TextField(
+fun TextField(
+    modifier: Modifier = Modifier,
     label: String,
     text: String,
     setText: (String) -> Unit,
@@ -373,8 +374,8 @@ private fun TextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     capitalization: KeyboardCapitalization = KeyboardOptions.Default.capitalization,
     isFinal: Boolean = false,
-    focusManager: FocusManager,
-    autofillNode: AutofillNode,
+    focusManager: FocusManager? = null,
+    autofillNode: AutofillNode? = null,
     onFocus: () -> Unit = {},
     onDone: () -> Unit = {}
 ) {
@@ -382,10 +383,10 @@ private fun TextField(
 
     OutlinedTextField(
         singleLine = true,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onGloballyPositioned {
-                autofillNode.boundingBox = it.boundsInWindow()
+                autofillNode?.boundingBox = it.boundsInWindow()
             }
             .onFocusChanged { focusState ->
                 /*
@@ -413,7 +414,7 @@ private fun TextField(
         ),
         keyboardActions = KeyboardActions(
             onNext = {
-                focusManager.moveFocus(FocusDirection.Down)
+                focusManager?.moveFocus(FocusDirection.Down)
             },
             onDone = {
                 onDone()
