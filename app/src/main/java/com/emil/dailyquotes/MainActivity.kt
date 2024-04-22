@@ -2,6 +2,7 @@ package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -912,15 +913,21 @@ fun ShareSheet(context: Context, quote: Quote, onDismiss: () -> Unit) {
                 FilledTonalButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        val shareIntent = Intent(Intent.ACTION_SEND)
-                        shareIntent.type = "image/png"
-                        shareIntent.putExtra(
-                            Intent.EXTRA_STREAM,
-                            getUriForBitmap(
+                        val imageUri = getUriForBitmap(
                                 context = context,
                                 bitmap = pictureToBitmap(picture, backgroundColor.toArgb())
                             )
-                        )
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            type = "image/png"
+                            clipData = ClipData.newRawUri(null, imageUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            putExtra(
+                            Intent.EXTRA_STREAM,
+                            imageUri
+                            )
+                        }
+                        shareIntent.clipData = ClipData.newRawUri("quote", imageUri)
                         mainActivity?.startActivity(
                             Intent.createChooser(
                                 shareIntent,
