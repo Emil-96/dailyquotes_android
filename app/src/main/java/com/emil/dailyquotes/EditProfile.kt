@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -27,11 +28,11 @@ import androidx.compose.ui.unit.dp
 fun EditProfile(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager
-){
+) {
     val originalName = firebaseManager.getName().value
 
     var name by remember {
-      mutableStateOf(firebaseManager.getName().value)
+        mutableStateOf("" + firebaseManager.getName().value)
     }
 
     var dialogOptions by remember {
@@ -39,7 +40,7 @@ fun EditProfile(
     }
     var showDialog by remember { mutableStateOf(false) }
 
-    if(name != originalName){
+    if (name != originalName) {
         dialogOptions = DialogOptions(
             title = "Discard changes?",
             text = "You have unsaved changes that will be discarded",
@@ -53,7 +54,7 @@ fun EditProfile(
         }
     }
 
-    if(showDialog){
+    if (showDialog) {
         Dialog(
             dialogOptions = dialogOptions,
             setVisibility = {
@@ -65,32 +66,50 @@ fun EditProfile(
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = {
-                    if(name == originalName) {
-                        mainActivity?.back()
-                    }else{
-                        showDialog = true
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (name == originalName) {
+                            mainActivity?.back()
+                        } else {
+                            showDialog = true
+                        }
+                    }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_close),
+                            contentDescription = "close"
+                        )
                     }
-                }) {
-                    Icon(painter = painterResource(id = R.drawable.ic_close), contentDescription = "close")
-                } },
+                },
                 title = { Text(text = "Edit profile") },
                 actions = {
-                    TextButton(onClick = { /*TODO*/ }) {
+                    TextButton(onClick = {
+                        firebaseManager.changeName(
+                            name = name,
+                            onSuccess = { mainActivity?.back() },
+                            onFailure = {
+                                mainActivity?.showMessage(
+                                    "Failed to update profile",
+                                    isError = true
+                                )
+                            })
+                    }) {
                         Text(text = "Save")
                     }
                 }
             )
         }
-    ){ paddingValues ->
+    ) { paddingValues ->
         Column(
-            modifier = Modifier.padding(paddingValues).padding(horizontal = 24.dp)
-        ){
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp)
+        ) {
             TextField(
                 modifier = Modifier.padding(top = 24.dp),
                 label = "Name",
                 text = "" + name,
-                setText = { name = it }
+                setText = { name = it },
+                capitalization = KeyboardCapitalization.Words
             )
         }
     }

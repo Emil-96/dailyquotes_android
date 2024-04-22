@@ -472,6 +472,24 @@ class FirebaseManager(
         }
     }
 
+    fun changeName(name: String, onSuccess: () -> Unit, onFailure: () -> Unit){
+        log("changing name from ${this.name.value} to $name")
+
+        getCurrentUser()?.let {  user ->
+            db.collection("users").document(user.uid)
+                .update("name", name)
+                .addOnSuccessListener {
+                    _name.postValue(name)
+                    log("successfully changed name")
+                    onSuccess()
+                }
+                .addOnFailureListener {
+                    log("failed to change name")
+                    onFailure()
+                }
+        }
+    }
+
     suspend fun getFavorites(): List<Quote>{
         return quoteDao.getFavorites()
     }
