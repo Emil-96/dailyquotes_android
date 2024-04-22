@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -114,7 +115,7 @@ private fun ProfileView(
                 FieldText(text = email.value ?: "")
             }
             Spacer(modifier = Modifier.weight(1f))
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = { mainActivity?.navigateTo(ROUTE_EDIT_PROFILE) }
             ) {
                 Text(text = "Edit profile")
