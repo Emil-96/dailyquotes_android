@@ -913,6 +913,7 @@ fun ShareSheet(context: Context, quote: Quote, onDismiss: () -> Unit) {
                 FilledTonalButton(
                     modifier = Modifier.weight(1f),
                     onClick = {
+                        onDismiss()
                         val imageUri = getUriForBitmap(
                                 context = context,
                                 bitmap = pictureToBitmap(picture, backgroundColor.toArgb())
