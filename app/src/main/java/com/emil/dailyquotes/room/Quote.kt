@@ -11,8 +11,6 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * This file contains all code required for the local database.
@@ -91,4 +89,15 @@ abstract class QuoteDatabase : RoomDatabase(){
      * @return The Data Access Object used to interact with the database.
      */
     abstract fun quoteDao(): QuoteDao
+}
+
+fun emptyQuote(): Quote{
+    return Quote(
+        "",
+        "",
+        "",
+        "",
+        "",
+        false
+    )
 }
