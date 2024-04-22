@@ -7,13 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.Picture
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -100,6 +98,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
+import com.emil.dailyquotes.room.emptyQuote
 import com.emil.dailyquotes.room.Migration1to2
 import com.emil.dailyquotes.room.Quote
 import com.emil.dailyquotes.room.QuoteDatabase
@@ -117,6 +116,7 @@ import kotlin.math.absoluteValue
 
 private const val USE_PAGER_EXPERIMENTAL = false
 private const val USE_BACK_PROGRESS_EXPERIMENTAL = false
+private const val USE_SHARE_SHEET = true
 
 enum class Direction {
     DEFAULT, LEFT, RIGHT, BOTTOM, TOP, NONE
@@ -131,6 +131,7 @@ const val ROUTE_ACCOUNT = "account"
 const val ROUTE_DBMANAGER = "db_manager"
 const val ROUTE_FAVORITES = "favorites"
 const val ROUTE_EDIT_PROFILE = "edit_profile"
+const val ROUTE_IMAGE_EDITOR = "image_editor"
 
 var mainActivity: MainActivity? = null
 
@@ -155,8 +156,7 @@ class MainActivity : ComponentActivity() {
 
     private var onBack: (() -> Unit)? = null
 
-    private var sharedQuote: Quote? = null
-
+    private var sharedQuote: Quote = emptyQuote()
     private var showShareSheet: MutableLiveData<Boolean> = MutableLiveData(false)
 
     /**
@@ -232,13 +232,10 @@ class MainActivity : ComponentActivity() {
                     val showSheet = showShareSheet.observeAsState()
 
                     if (showSheet.value == true) {
-                        sharedQuote?.let { quote ->
-                            ShareSheet(
-                                context = this,
-                                quote = quote,
-                                onDismiss = { showShareSheet.postValue(false) }
-                            )
-                        }
+                        ShareSheet(
+                            context = this@MainActivity,
+                            quote = sharedQuote,
+                        )
                     }
 
                     if (USE_PAGER_EXPERIMENTAL) {
@@ -460,6 +457,10 @@ class MainActivity : ComponentActivity() {
                 slideDirection = Direction.BOTTOM,
                 enterEasing = EaseOutCirc,
             ) { EditProfile(firebaseManager = firebaseManager) }
+            getNavDestination(
+                this,
+                ROUTE_IMAGE_EDITOR,
+            ) { ImageEditor(quote = sharedQuote, context = this@MainActivity) }
         }
     }
 
@@ -612,7 +613,17 @@ class MainActivity : ComponentActivity() {
 
     fun share(quote: Quote) {
         sharedQuote = quote
-        showShareSheet.postValue(true)
+        if (USE_SHARE_SHEET) {
+            Log.d("ShareSheet", "Showing share sheet")
+            showShareSheet.postValue(true)
+        } else {
+            navigateTo(ROUTE_IMAGE_EDITOR)
+        }
+    }
+
+    fun hideShareSheet() {
+        Log.d("ShareSheet", "Hiding share sheet")
+        showShareSheet.postValue(false)
     }
 }
 
@@ -858,114 +869,41 @@ fun currentRoute(navController: NavController): String {
     return "" + navBackStackEntry?.destination?.route
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShareSheet(context: Context, quote: Quote, onDismiss: () -> Unit) {
-    val sheetState = rememberModalBottomSheetState()
-    val picture = remember { Picture() }
-
-    val backgroundColor = CardDefaults.elevatedCardColors().contentColor
+fun ShareSheet(
+    context: Context,
+    quote: Quote,
+) {
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     ModalBottomSheet(
         windowInsets = WindowInsets(0.dp),
         sheetState = sheetState,
-        onDismissRequest = { onDismiss() }
+        onDismissRequest = { mainActivity?.hideShareSheet() }
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            ElevatedCard(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .drawWithCache {
-                        val width = this.size.width.toInt()
-                        val height = this.size.height.toInt()
-                        onDrawWithContent {
-                            val pictureCanvas = Canvas(
-                                picture.beginRecording(
-                                    width, height
-                                )
-                            )
-                            draw(this, this.layoutDirection, pictureCanvas, this.size) {
-                                this@onDrawWithContent.drawContent()
-                            }
-                            picture.endRecording()
-
-                            drawIntoCanvas { canvas ->
-                                canvas.nativeCanvas.drawPicture(picture)
-                            }
-                        }
-                    },
-                colors = CardDefaults.elevatedCardColors()
-                    .copy(containerColor = backgroundColor)
-            ) {
-                QuoteCard(
-                    modifier = Modifier.padding(24.dp),
-                    quote = quote
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                FilledTonalButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        onDismiss()
-                        val imageUri = getUriForBitmap(
-                                context = context,
-                                bitmap = pictureToBitmap(picture, backgroundColor.toArgb())
-                            )
-                        val shareIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            type = "image/png"
-                            clipData = ClipData.newRawUri(null, imageUri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            putExtra(
-                            Intent.EXTRA_STREAM,
-                            imageUri
-                            )
-                        }
-                        shareIntent.clipData = ClipData.newRawUri("quote", imageUri)
-                        mainActivity?.startActivity(
-                            Intent.createChooser(
-                                shareIntent,
-                                "Share quote via..."
-                            )
-                        )
-                    }
-                ) {
-                    Text(text = "Share Image")
+        ImageEditor(
+            context = context,
+            quote = quote,
+            isFullscreen = false,
+            optionsVisible = false,
+            onExpandOptions = {
+                scope.launch {
+                    sheetState.expand()
                 }
-                FilledTonalButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        onDismiss()
-                        val shareIntent = Intent(Intent.ACTION_SEND)
-                        shareIntent.type = "text/plain"
-                        shareIntent.putExtra(
-                            Intent.EXTRA_TEXT,
-                            "\"" + quote.quote.trim() + "\""
-                        )
-                        mainActivity?.startActivity(
-                            Intent.createChooser(
-                                shareIntent,
-                                "Share quote via..."
-                            )
-                        )
-                    }
-                ) {
-                    Text(text = "Share Text")
-                }
+            },
+            onShare = {
+                mainActivity?.hideShareSheet()
             }
-            Spacer(modifier = Modifier.height(0.dp))
-        }
+        )
     }
 }
 
-private fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
+fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
     val bitmap = Bitmap.createBitmap(
         picture.width,
         picture.height,
@@ -978,7 +916,7 @@ private fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
     return bitmap
 }
 
-private fun getUriForBitmap(context: Context, bitmap: Bitmap): Uri? {
+fun getUriForBitmap(context: Context, bitmap: Bitmap): Uri? {
     val image = File(context.cacheDir, "shared_image.png")
     var uri: Uri? = null
     try {

@@ -43,6 +43,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.emil.dailyquotes.room.Quote
@@ -119,6 +120,7 @@ fun QuoteCard(
     title: String = "",
     firebaseManager: FirebaseManager? = null,
     startWithActionRow: Boolean = false,
+    textStyle: TextStyle = MaterialTheme.typography.headlineMedium
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val vibrator = LocalHapticFeedback.current
@@ -161,7 +163,7 @@ fun QuoteCard(
             }
             Text(
                 text = "" + quote?.quote,
-                style = MaterialTheme.typography.headlineMedium,
+                style = textStyle,
                 fontStyle = FontStyle.Italic,
                 modifier = Modifier
                     .alpha(if (showPlaceholder) .2f else 1f)
