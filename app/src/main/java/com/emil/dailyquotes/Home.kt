@@ -66,9 +66,9 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-    ){
+    ) {
         DailyQuote(firebaseManager = firebaseManager, preferenceManager = preferenceManager)
-        if(orientation == Configuration.ORIENTATION_PORTRAIT && firebaseManager.isSignedIn()) {
+        if (orientation == Configuration.ORIENTATION_PORTRAIT && firebaseManager.isSignedIn()) {
             FavoritePager(firebaseManager = firebaseManager)
         }
     }
@@ -117,8 +117,8 @@ fun QuoteCard(
     modifier: Modifier = Modifier,
     quote: Quote?,
     title: String = "",
-    firebaseManager: FirebaseManager,
-    startWithActionRow: Boolean = false
+    firebaseManager: FirebaseManager? = null,
+    startWithActionRow: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val vibrator = LocalHapticFeedback.current
@@ -150,11 +150,13 @@ fun QuoteCard(
                 .padding(horizontal = 24.dp, vertical = 24.dp),
             //verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if(title != "") {
+            if (title != "") {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.alpha(.5f).padding(bottom = 16.dp)
+                    modifier = Modifier
+                        .alpha(.5f)
+                        .padding(bottom = 16.dp)
                 )
             }
             Text(
@@ -172,19 +174,21 @@ fun QuoteCard(
                     .defaultMinSize(minHeight = if (showPlaceholder) 86.dp else 0.dp)
                     .fillMaxWidth()
             )
-            AnimatedVisibility(
-                visible = showActionRow && !showPlaceholder,
-                enter = slideInVertically(
-                    initialOffsetY = { -it },
-                    animationSpec = tween(durationMillis = transitionDurationMillis)
-                ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
-            ) {
-                quote?.let {
-                    ActionRow(
-                        modifier = Modifier.padding(top = 16.dp),
-                        firebaseManager = firebaseManager,
-                        quote = it
-                    )
+            firebaseManager?.let {
+                AnimatedVisibility(
+                    visible = showActionRow && !showPlaceholder,
+                    enter = slideInVertically(
+                        initialOffsetY = { -it },
+                        animationSpec = tween(durationMillis = transitionDurationMillis)
+                    ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
+                ) {
+                    quote?.let {
+                        ActionRow(
+                            modifier = Modifier.padding(top = 16.dp),
+                            firebaseManager = firebaseManager,
+                            quote = it
+                        )
+                    }
                 }
             }
         }
@@ -207,18 +211,7 @@ private fun ActionRow(
             quote = quote,
         )
         IconButton(onClick = {
-            val shareIntent = Intent(Intent.ACTION_SEND)
-            shareIntent.type = "text/plain"
-            shareIntent.putExtra(
-                Intent.EXTRA_TEXT,
-                "\"" + quote.quote.trim() + "\""
-            )
-            mainActivity?.startActivity(
-                Intent.createChooser(
-                    shareIntent,
-                    "Share quote via..."
-                )
-            )
+            mainActivity?.share(quote = quote)
         }) {
             Icon(
                 // TODO: Icon is too big, needs to be changed

@@ -5,9 +5,14 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.Picture
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -21,11 +26,15 @@ import androidx.compose.animation.core.EaseOutCirc
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
@@ -33,8 +42,14 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
@@ -42,9 +57,11 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -54,17 +71,25 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.drawscope.draw
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.core.view.WindowCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraphBuilder
@@ -75,11 +100,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.emil.dailyquotes.room.Migration1to2
+import com.emil.dailyquotes.room.Quote
 import com.emil.dailyquotes.room.QuoteDatabase
 import com.emil.dailyquotes.ui.theme.DailyQuotesTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import kotlin.math.absoluteValue
+
 
 /**
  * This is the main entry point for the application.
@@ -125,10 +154,15 @@ class MainActivity : ComponentActivity() {
 
     private var onBack: (() -> Unit)? = null
 
+    private var sharedQuote: Quote? = null
+
+    private var showShareSheet: MutableLiveData<Boolean> = MutableLiveData(false)
+
     /**
      * Gets called when the UI gets created.
      * It is the entry point for all UI action.
      */
+    @OptIn(ExperimentalMaterial3Api::class)
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -194,6 +228,17 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val showSheet = showShareSheet.observeAsState()
+
+                    if (showSheet.value == true) {
+                        sharedQuote?.let { quote ->
+                            ShareSheet(
+                                context = this,
+                                quote = quote,
+                                onDismiss = { showShareSheet.postValue(false) }
+                            )
+                        }
+                    }
 
                     if (USE_PAGER_EXPERIMENTAL) {
                         NavigationPager(firebaseManager, preferenceManager)
@@ -563,6 +608,11 @@ class MainActivity : ComponentActivity() {
     ) {
         // TODO: Show a toast to the user with the error message.
     }
+
+    fun share(quote: Quote) {
+        sharedQuote = quote
+        showShareSheet.postValue(true)
+    }
 }
 
 /**
@@ -606,7 +656,7 @@ fun HomePage(
         mutableIntStateOf(0)
     }
 
-    if(orientation == Configuration.ORIENTATION_PORTRAIT) {
+    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
         Scaffold(
             bottomBar = {
                 BottomBar(
@@ -624,7 +674,7 @@ fun HomePage(
                 pagerState, navigationItems, screenWidth
             )
         }
-    }else{
+    } else {
         Row(
             modifier = Modifier.safeContentPadding()
         ) {
@@ -665,7 +715,7 @@ private fun PortraitPager(
                             ).absoluteValue
                     alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
 
-                    val direction = if(pagerState.currentPageOffsetFraction >= 0) 1f else -1f
+                    val direction = if (pagerState.currentPageOffsetFraction >= 0) 1f else -1f
                     val offsetDerivedFromProgress =
                         EaseInCirc.transform(pageOffset) * screenWidth
                     val completePageOffset = screenWidth * direction * pageOffset
@@ -685,7 +735,7 @@ private fun LandscapePager(
     pagerState: PagerState,
     navigationItems: List<NavigationDestination>,
     screenHeight: Float
-){
+) {
     VerticalPager(
         state = pagerState,
         beyondBoundsPageCount = 1
@@ -698,7 +748,7 @@ private fun LandscapePager(
                             ).absoluteValue
                     alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
 
-                    val direction = if(pagerState.currentPageOffsetFraction >= 0) 1f else -1f
+                    val direction = if (pagerState.currentPageOffsetFraction >= 0) 1f else -1f
                     val offsetDerivedFromProgress =
                         EaseInCirc.transform(pageOffset) * screenHeight
                     val completePageOffset = screenHeight * direction * pageOffset
@@ -717,29 +767,29 @@ private fun BottomBar(
     navigationItems: List<NavigationDestination>,
     currentRoute: String,
     screenWidth: Float
-){
+) {
     val scope = rememberCoroutineScope()
 
     NavigationBar {
         navigationItems.forEachIndexed { index, item ->
             val navItem = item.getNavigationItem()
             val selected = pagerState.currentPage == index
-            if(selected){
+            if (selected) {
                 setPosition(index)
             }
             NavigationBarItem(
                 selected = selected,
                 onClick = {
                     if (currentRoute != navItem.route) {
-                            scope.launch {
-                                pagerState.animateScrollToPage(page = index)
-                                /*
-                                pagerState.animateScrollBy(
-                                    value = screenWidth * (index - pagerState.currentPage),
-                                    animationSpec = tween(durationMillis = 350)
-                                )
-                                */
-                            }
+                        scope.launch {
+                            pagerState.animateScrollToPage(page = index)
+                            /*
+                            pagerState.animateScrollBy(
+                                value = screenWidth * (index - pagerState.currentPage),
+                                animationSpec = tween(durationMillis = 350)
+                            )
+                            */
+                        }
                     }
                 },
                 icon = { Icon(painterResource(id = navItem.icon), navItem.label) },
@@ -758,7 +808,7 @@ private fun SideRail(
     navigationItems: List<NavigationDestination>,
     currentRoute: String,
     screenWidth: Float
-){
+) {
     val scope = rememberCoroutineScope()
 
     NavigationRail {
@@ -766,7 +816,7 @@ private fun SideRail(
         navigationItems.forEachIndexed { index, item ->
             val navItem = item.getNavigationItem()
             val selected = pagerState.currentPage == index
-            if(selected){
+            if (selected) {
                 setPosition(index)
             }
             NavigationRailItem(
@@ -805,4 +855,134 @@ private fun SideRail(
 fun currentRoute(navController: NavController): String {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     return "" + navBackStackEntry?.destination?.route
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShareSheet(context: Context, quote: Quote, onDismiss: () -> Unit) {
+    val sheetState = rememberModalBottomSheetState()
+    val picture = remember { Picture() }
+
+    val backgroundColor = CardDefaults.elevatedCardColors().contentColor
+
+    ModalBottomSheet(
+        windowInsets = WindowInsets(0.dp),
+        sheetState = sheetState,
+        onDismissRequest = { onDismiss() }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .navigationBarsPadding(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ElevatedCard(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .drawWithCache {
+                        val width = this.size.width.toInt()
+                        val height = this.size.height.toInt()
+                        onDrawWithContent {
+                            val pictureCanvas = Canvas(
+                                picture.beginRecording(
+                                    width, height
+                                )
+                            )
+                            draw(this, this.layoutDirection, pictureCanvas, this.size) {
+                                this@onDrawWithContent.drawContent()
+                            }
+                            picture.endRecording()
+
+                            drawIntoCanvas { canvas ->
+                                canvas.nativeCanvas.drawPicture(picture)
+                            }
+                        }
+                    },
+                colors = CardDefaults.elevatedCardColors()
+                    .copy(containerColor = backgroundColor)
+            ) {
+                QuoteCard(
+                    modifier = Modifier.padding(24.dp),
+                    quote = quote
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                FilledTonalButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND)
+                        shareIntent.type = "image/png"
+                        shareIntent.putExtra(
+                            Intent.EXTRA_STREAM,
+                            getUriForBitmap(
+                                context = context,
+                                bitmap = pictureToBitmap(picture, backgroundColor.toArgb())
+                            )
+                        )
+                        mainActivity?.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                "Share quote via..."
+                            )
+                        )
+                    }
+                ) {
+                    Text(text = "Share Image")
+                }
+                FilledTonalButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        onDismiss()
+                        val shareIntent = Intent(Intent.ACTION_SEND)
+                        shareIntent.type = "text/plain"
+                        shareIntent.putExtra(
+                            Intent.EXTRA_TEXT,
+                            "\"" + quote.quote.trim() + "\""
+                        )
+                        mainActivity?.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                "Share quote via..."
+                            )
+                        )
+                    }
+                ) {
+                    Text(text = "Share Text")
+                }
+            }
+            Spacer(modifier = Modifier.height(0.dp))
+        }
+    }
+}
+
+private fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
+    val bitmap = Bitmap.createBitmap(
+        picture.width,
+        picture.height,
+        Bitmap.Config.ARGB_8888
+    )
+
+    val canvas = android.graphics.Canvas(bitmap)
+    canvas.drawColor(backgroundColor)
+    canvas.drawPicture(picture)
+    return bitmap
+}
+
+private fun getUriForBitmap(context: Context, bitmap: Bitmap): Uri? {
+    val image = File(context.cacheDir, "shared_image.png")
+    var uri: Uri? = null
+    try {
+        //imageFolder.mkdirs()
+        //val imageFile = File(imageFolder, "shared_image.png")
+        val fileOutputStream = FileOutputStream(image)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 90, fileOutputStream)
+        fileOutputStream.flush()
+        fileOutputStream.close()
+        uri = FileProvider.getUriForFile(context, context.packageName + ".provider", image)
+    } catch (e: Exception) {
+        Log.e("MainActivity", "Error preparing uri for file sharing: $e")
+    }
+    return uri
 }
