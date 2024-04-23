@@ -29,12 +29,3 @@ Composable functions in [Jetpack Compose](https://developer.android.com/jetpack/
 ## Current State
 
 The app is currently under development and is not ready to be used.
-
-### Known issues
-
-- When opening the app, a daily quote is retrieved twice
-- The profile can't be edited at the moment
-
-### Things coming in the future
-
-- The possibility to save and view quotes
