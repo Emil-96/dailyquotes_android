@@ -439,7 +439,7 @@ class FirebaseManager(
                     quote.isFavorite = true
                     mainActivity?.lifecycleScope?.launch {
                         log("trying to save favorite locally")
-                        quoteDao?.update(quote)
+                        quoteDao.update(quote)
                         log("successfully uploaded favorite")
                         onSuccess()
                     }
@@ -458,9 +458,9 @@ class FirebaseManager(
             db.collection("users").document(user.uid)
                 .update("favorites", FieldValue.arrayRemove(quote.id))
                 .addOnSuccessListener {
-                    quote.isFavorite = true
+                    quote.isFavorite = false
                     mainActivity?.lifecycleScope?.launch {
-                        quoteDao?.update(quote)
+                        quoteDao.update(quote)
                         log("successfully removed favorite")
                         onSuccess()
                     }
