@@ -98,7 +98,7 @@ fun FavoritePager(
                         scaleX = scale
                         scaleY = scale
                     },
-                quote = favorites[page],
+                quote = favorites[favorites.lastIndex - page],
                 firebaseManager = firebaseManager
             )
         }
@@ -134,7 +134,7 @@ fun FavoritePage(
             ) {
                 items(favorites.size) { index ->
                     QuoteCard(
-                        quote = favorites[index],
+                        quote = favorites[favorites.lastIndex - index],
                         firebaseManager = firebaseManager,
                         startWithActionRow = true
                     )
