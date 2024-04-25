@@ -3,6 +3,7 @@ package com.emil.dailyquotes
 import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,7 +40,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
 @SuppressLint("CoroutineCreationDuringComposition")
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FavoritePager(
     modifier: Modifier = Modifier,
@@ -47,13 +48,11 @@ fun FavoritePager(
     val scope = rememberCoroutineScope()
 
     val emptyQuoteList: List<Quote> = listOf()
-    var favorites by remember { mutableStateOf(emptyQuoteList) }
+    val favorites = firebaseManager.favorites.observeAsState(initial = listOf())
 
     scope.launch {
-        favorites = firebaseManager.getFavorites()
+        firebaseManager.getFavorites()
     }
-
-    val pagerState = rememberPagerState(pageCount = { favorites.size })
 
     Column {
         Row(
@@ -79,14 +78,29 @@ fun FavoritePager(
                 }
             }
         }
-        HorizontalPager(
-            modifier = Modifier
-                .padding(vertical = 16.dp),
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = 36.dp),
-            pageSpacing = 0.dp,
-            beyondBoundsPageCount = 1
-        ) { page ->
+        AnimatedContent(targetState = favorites.value, label = "") { list ->
+            FavPager(list = list, firebaseManager = firebaseManager)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun FavPager(
+    list: List<Quote>,
+    firebaseManager: FirebaseManager
+){
+    val pagerState = rememberPagerState(pageCount = { list.size })
+
+    HorizontalPager(
+        modifier = Modifier
+            .padding(vertical = 16.dp),
+        state = pagerState,
+        contentPadding = PaddingValues(horizontal = 36.dp),
+        pageSpacing = 0.dp,
+        beyondBoundsPageCount = 1
+    ) { page ->
+        if(list.isNotEmpty()) {
             QuoteCard(
                 modifier = Modifier
                     .graphicsLayer {
@@ -98,7 +112,7 @@ fun FavoritePager(
                         scaleX = scale
                         scaleY = scale
                     },
-                quote = favorites[favorites.lastIndex - page],
+                quote = list[list.lastIndex - page],
                 firebaseManager = firebaseManager
             )
         }
@@ -117,10 +131,10 @@ fun FavoritePage(
     val screenWidth = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp }
 
     val emptyQuoteList: List<Quote> = listOf()
-    var favorites by remember { mutableStateOf(emptyQuoteList) }
+    val favorites = firebaseManager.favorites.observeAsState(initial = listOf())
 
     scope.launch {
-        favorites = firebaseManager.getFavorites()
+        firebaseManager.getFavorites()
     }
     val listState = rememberLazyListState()
 
@@ -132,9 +146,9 @@ fun FavoritePage(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 state = listState
             ) {
-                items(favorites.size) { index ->
+                items(favorites.value.size) { index ->
                     QuoteCard(
-                        quote = favorites[favorites.lastIndex - index],
+                        quote = favorites.value[favorites.value.lastIndex - index],
                         firebaseManager = firebaseManager,
                         startWithActionRow = true
                     )
@@ -146,10 +160,10 @@ fun FavoritePage(
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 state = listState
             ) {
-                items(favorites.size) { index ->
+                items(favorites.value.size) { index ->
                     QuoteCard(
                         modifier = Modifier.widthIn(max = screenWidth / 2),
-                        quote = favorites[index],
+                        quote = favorites.value[favorites.value.lastIndex - index],
                         firebaseManager = firebaseManager,
                         startWithActionRow = true
                     )

@@ -230,9 +230,9 @@ private fun FavoriteButton(
     quote: Quote,
 ) {
 
-    var isFavorite by remember {
-        mutableStateOf(quote.isFavorite)
-    }
+    val favorites = firebaseManager.favorites.observeAsState(initial = listOf())
+
+    val isFavorite = favorites.value.contains(quote)
 
     var isLoading by remember {
         mutableStateOf(false)
@@ -249,7 +249,6 @@ private fun FavoriteButton(
                     quote,
                     onSuccess = {
                         isLoading = false
-                        isFavorite = true
                     },
                     onFailure = {
                         isLoading = false
@@ -265,7 +264,6 @@ private fun FavoriteButton(
                     quote,
                     onSuccess = {
                         isLoading = false
-                        isFavorite = false
                     },
                     onFailure = {
                         isLoading = false

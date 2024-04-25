@@ -39,8 +39,10 @@ class FirebaseManager(
 
     private var _name: MutableLiveData<String> = MutableLiveData("")
     private var _email: MutableLiveData<String> = MutableLiveData("")
+    private var _favorites: MutableLiveData<List<Quote>> = MutableLiveData(listOf())
     private val name: LiveData<String> = _name
     private val email: LiveData<String> = _email
+    val favorites: LiveData<List<Quote>> = _favorites
 
     private var isAdmin = false
 
@@ -441,6 +443,7 @@ class FirebaseManager(
                         log("trying to save favorite locally")
                         quoteDao.update(quote)
                         log("successfully uploaded favorite")
+                        getFavorites()
                         onSuccess()
                     }
                 }
@@ -462,6 +465,7 @@ class FirebaseManager(
                     mainActivity?.lifecycleScope?.launch {
                         quoteDao.update(quote)
                         log("successfully removed favorite")
+                        getFavorites()
                         onSuccess()
                     }
                 }
@@ -490,8 +494,8 @@ class FirebaseManager(
         }
     }
 
-    suspend fun getFavorites(): List<Quote>{
-        return quoteDao.getFavorites()
+    suspend fun getFavorites(){
+        _favorites.postValue(quoteDao.getFavorites())
     }
 }
 
