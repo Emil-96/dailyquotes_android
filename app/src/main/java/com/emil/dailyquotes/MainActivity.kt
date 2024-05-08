@@ -676,7 +676,6 @@ fun HomePage(
                     //position = (position-1).coerceIn(0,1),
                     setPosition = { position = it * 2 },
                     navigationItems = navigationItems,
-                    currentRoute = currentRoute,
                     screenWidth = screenWidth
                 )
             }
@@ -773,12 +772,11 @@ private fun LandscapePager(
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BottomBar(
+fun BottomBar(
     pagerState: PagerState,
     setPosition: (Int) -> Unit,
     navigationItems: List<NavigationDestination>,
-    currentRoute: String,
-    screenWidth: Float
+    screenWidth: Float = 0f
 ) {
     val scope = rememberCoroutineScope()
 
@@ -792,7 +790,7 @@ private fun BottomBar(
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (currentRoute != navItem.route) {
+                    if (pagerState.currentPage != index){
                         scope.launch {
                             pagerState.animateScrollToPage(page = index)
                             /*
