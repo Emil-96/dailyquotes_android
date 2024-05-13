@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Canvas
@@ -59,13 +60,15 @@ fun ImageCrop(
             modifier = Modifier
                 .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Spacer(modifier = Modifier.weight(1f))
+            /*
             Text(
                 text = "Adjust image",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.titleLarge
             )
+             */
             ElevatedCard(
                 modifier = Modifier
                     .aspectRatio(1f)
@@ -103,7 +106,12 @@ fun ImageCrop(
                                          * otherwise the view will remain empty and cropping doesn't
                                          * work (I don't know why).
                                          */
-                                        setImage(pictureToBitmap(picture, Color.Black.toArgb()).asImageBitmap())
+                                        setImage(
+                                            pictureToBitmap(
+                                                picture,
+                                                Color.Black.toArgb()
+                                            ).asImageBitmap()
+                                        )
                                     }
                                 }
                             }
@@ -114,6 +122,11 @@ fun ImageCrop(
                     )
                 }
             }
+            Text(
+                modifier = Modifier.alpha(.5f),
+                text = "Pan and pinch to adjust the image to your liking",
+                style = MaterialTheme.typography.labelMedium
+            )
             Spacer(modifier = Modifier.weight(1f))
         }
         Row {
