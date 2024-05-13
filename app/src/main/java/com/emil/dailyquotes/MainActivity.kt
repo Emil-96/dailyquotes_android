@@ -18,6 +18,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.EaseInCirc
@@ -159,11 +160,14 @@ class MainActivity : ComponentActivity() {
     private var sharedQuote: Quote = emptyQuote()
     private var showShareSheet: MutableLiveData<Boolean> = MutableLiveData(false)
 
+    lateinit var pickMedia: ActivityResultLauncher<PickVisualMediaRequest>
+
+    var selectedImage = SelectedImage()
+
     /**
      * Gets called when the UI gets created.
      * It is the entry point for all UI action.
      */
-    @OptIn(ExperimentalMaterial3Api::class)
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -183,6 +187,15 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "Trying to load daily quote")
 
         val dbManager = DBManager(firebaseManager)
+
+        pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) {
+                Log.d("PhotoPicker", "Photo uri is $uri")
+                selectedImage.setImage(uri)
+            } else {
+                Log.d("PhotoPicker", "Photo uri is null")
+            }
+        }
 
         registerCsvLauncher(dbManager)
 
@@ -456,7 +469,14 @@ class MainActivity : ComponentActivity() {
                 ROUTE_EDIT_PROFILE,
                 slideDirection = Direction.BOTTOM,
                 enterEasing = EaseOutCirc,
-            ) { EditProfile(firebaseManager = firebaseManager) }
+            ) {
+                val selectedImage = selectedImage.image.observeAsState()
+
+                EditProfile(
+                    firebaseManager = firebaseManager,
+                    selectedImageUri = selectedImage.value
+                )
+            }
             getNavDestination(
                 this,
                 ROUTE_IMAGE_EDITOR,
@@ -790,7 +810,7 @@ fun BottomBar(
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (pagerState.currentPage != index){
+                    if (pagerState.currentPage != index) {
                         scope.launch {
                             pagerState.animateScrollToPage(page = index)
                             /*
@@ -902,6 +922,10 @@ fun ShareSheet(
 }
 
 fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
+    if(picture.width < 1 || picture.height < 1){
+        return Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+    }
+
     val bitmap = Bitmap.createBitmap(
         picture.width,
         picture.height,
