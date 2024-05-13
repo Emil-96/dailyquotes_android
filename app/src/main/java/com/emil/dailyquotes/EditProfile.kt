@@ -5,6 +5,11 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -111,7 +116,12 @@ fun EditProfile(
                 },
                 title = { Text(text = "Edit profile") },
                 actions = {
-                    if (!showCrop) {
+                    val duration = 250
+                    AnimatedVisibility(
+                        visible = !showCrop,
+                        enter = fadeIn(animationSpec = tween(duration)),
+                        exit = fadeOut(animationSpec = tween(duration))
+                    ) {
                         TextButton(onClick = {
                             firebaseManager.changeName(
                                 name = name,
@@ -135,23 +145,25 @@ fun EditProfile(
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp)
         ) {
-            if (showCrop && selectedImageUri != null) {
-                ImageCrop(
-                    image = selectedImageUri,
-                    hideCrop = { mainActivity?.selectedImage?.setImage(Uri.EMPTY) },
-                    setImage = {
-                        croppedImage = it
-                    },
-                    saveImage = {
-                        selectedImage = it
-                    }
-                )
-            } else {
-                EditFields(
-                    profileImage = selectedImage,
-                    name = name,
-                    setName = { name = it }
-                )
+            AnimatedContent(targetState = selectedImageUri, label = "show and hide cropping ui") { cropping ->
+                if (cropping?.path?.isNotBlank() == true) {
+                    ImageCrop(
+                        image = cropping,
+                        hideCrop = { mainActivity?.selectedImage?.setImage(Uri.EMPTY) },
+                        setImage = {
+                            croppedImage = it
+                        },
+                        saveImage = {
+                            selectedImage = it
+                        }
+                    )
+                } else {
+                    EditFields(
+                        profileImage = selectedImage,
+                        name = name,
+                        setName = { name = it }
+                    )
+                }
             }
             // This is required as otherwise the recording of the cropped image doesn't work (I don't know why)
             ImagePreview(
