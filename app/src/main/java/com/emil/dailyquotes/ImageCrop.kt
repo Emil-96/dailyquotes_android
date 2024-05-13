@@ -40,7 +40,8 @@ import me.saket.telephoto.zoomable.glide.ZoomableGlideImage
 fun ImageCrop(
     image: Uri,
     hideCrop: () -> Unit,
-    setImage: (ImageBitmap) -> Unit
+    setImage: (ImageBitmap) -> Unit,
+    saveImage: (ImageBitmap) -> Unit
 ) {
     BackHandler {
         hideCrop()
@@ -79,7 +80,6 @@ fun ImageCrop(
                         modifier = Modifier
                             .padding(2.dp)
                             .fillMaxSize()
-                            /*
                             .drawWithCache {
                                 val width = this.size.width.toInt()
                                 val height = this.size.height.toInt()
@@ -96,10 +96,17 @@ fun ImageCrop(
 
                                     drawIntoCanvas { canvas ->
                                         canvas.nativeCanvas.drawPicture(picture)
+
+                                        /**
+                                         * Constantly setting the image here and then displaying it
+                                         * on the same screen (in [EditProfile]) is required because
+                                         * otherwise the view will remain empty and cropping doesn't
+                                         * work (I don't know why).
+                                         */
+                                        setImage(pictureToBitmap(picture, Color.Black.toArgb()).asImageBitmap())
                                     }
                                 }
                             }
-                            */
                             .clip(RoundedCornerShape(22.dp)),
                         model = image,
                         contentDescription = "selected image",
@@ -117,7 +124,7 @@ fun ImageCrop(
             }
             Spacer(modifier = Modifier.weight(1f))
             Button(onClick = {
-                setImage(
+                saveImage(
                     pictureToBitmap(picture, Color.Black.toArgb()).asImageBitmap()
                 )
                 hideCrop()

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
@@ -82,7 +84,11 @@ fun EditProfile(
         )
     }
 
-    var croppedImage: ImageBitmap? by remember {
+    var croppedImage: ImageBitmap by remember {
+        mutableStateOf(ImageBitmap(1,1))
+    }
+
+    var selectedImage: ImageBitmap? by remember {
         mutableStateOf(null)
     }
 
@@ -135,15 +141,25 @@ fun EditProfile(
                     hideCrop = { mainActivity?.selectedImage?.setImage(Uri.EMPTY) },
                     setImage = {
                         croppedImage = it
+                    },
+                    saveImage = {
+                        selectedImage = it
                     }
                 )
             } else {
                 EditFields(
-                    profileImage = croppedImage,
+                    profileImage = selectedImage,
                     name = name,
                     setName = { name = it }
                 )
             }
+            // This is required as otherwise the recording of the cropped image doesn't work (I don't know why)
+            ImagePreview(
+                modifier = Modifier
+                    .alpha(0f)
+                    .height(0.dp),
+                image = croppedImage
+            )
         }
     }
 }
