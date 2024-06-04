@@ -2,7 +2,6 @@ package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -26,15 +25,11 @@ import androidx.compose.animation.core.EaseOutCirc
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
@@ -42,11 +37,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -71,13 +62,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Canvas
-import androidx.compose.ui.graphics.drawscope.draw
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -486,7 +471,8 @@ class MainActivity : ComponentActivity() {
                     quote = sharedQuote,
                     context = this@MainActivity,
                     firebaseManager = firebaseManager
-                ) }
+                )
+            }
         }
     }
 
@@ -708,7 +694,9 @@ fun HomePage(
         ) { paddingValues ->
             PortraitPager(
                 modifier = Modifier.padding(paddingValues),
-                pagerState, navigationItems, screenWidth
+                pagerState = pagerState,
+                navigationItems = navigationItems,
+                screenWidth = screenWidth
             )
         }
     } else {
@@ -747,18 +735,13 @@ private fun PortraitPager(
         navigationItems[page].getContent(
             modifier = Modifier
                 .graphicsLayer {
-                    val pageOffset = (
-                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                            ).absoluteValue
-                    alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
-
-                    val direction = if (pagerState.currentPageOffsetFraction >= 0) 1f else -1f
-                    val offsetDerivedFromProgress =
-                        EaseInCirc.transform(pageOffset) * screenWidth
-                    val completePageOffset = screenWidth * direction * pageOffset
-                    translationX =
-                            //(backProgress * screenWidth / 4) -
-                        (completePageOffset - direction * offsetDerivedFromProgress)
+                    translationX = getPagerProgress(
+                        currentPage = pagerState.currentPage,
+                        page = page,
+                        offsetFraction = pagerState.currentPageOffsetFraction,
+                        screenSize = screenWidth
+                    )
+                    alpha = -2 * pagerState.currentPageOffsetFraction.absoluteValue + 1f
                 }
         )()
     }
@@ -774,22 +757,20 @@ private fun LandscapePager(
     screenHeight: Float
 ) {
     VerticalPager(
+        modifier = modifier,
         state = pagerState,
         beyondBoundsPageCount = 1
     ) { page ->
         navigationItems[page].getContent(
             modifier = Modifier
                 .graphicsLayer {
-                    val pageOffset = (
-                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                            ).absoluteValue
-                    alpha = (1f - 2 * pageOffset).coerceIn(0f, 1f)
-
-                    val direction = if (pagerState.currentPageOffsetFraction >= 0) 1f else -1f
-                    val offsetDerivedFromProgress =
-                        EaseInCirc.transform(pageOffset) * screenHeight
-                    val completePageOffset = screenHeight * direction * pageOffset
-                    translationY = completePageOffset - direction * offsetDerivedFromProgress
+                    translationY = getPagerProgress(
+                        currentPage = pagerState.currentPage,
+                        page = page,
+                        offsetFraction = pagerState.currentPageOffsetFraction,
+                        screenSize = screenHeight
+                    )
+                    alpha = -2 * pagerState.currentPageOffsetFraction.absoluteValue + 1f
                 }
         )()
     }
@@ -930,7 +911,7 @@ fun ShareSheet(
 }
 
 fun pictureToBitmap(picture: Picture, backgroundColor: Int): Bitmap {
-    if(picture.width < 1 || picture.height < 1){
+    if (picture.width < 1 || picture.height < 1) {
         return Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
     }
 
@@ -961,4 +942,19 @@ fun getUriForBitmap(context: Context, bitmap: Bitmap): Uri? {
         Log.e("MainActivity", "Error preparing uri for file sharing: $e")
     }
     return uri
+}
+
+private fun getPagerProgress(
+    currentPage: Int,
+    page: Int,
+    offsetFraction: Float,
+    screenSize: Float
+): Float {
+    val pageOffset = ((currentPage - page) + offsetFraction).absoluteValue
+
+    val direction = if (offsetFraction >= 0) 1f else -1f
+    val offsetDerivedFromProgress =
+        EaseInCirc.transform(pageOffset) * screenSize
+    val completePageOffset = screenSize * direction * pageOffset
+    return (completePageOffset - direction * offsetDerivedFromProgress)
 }
