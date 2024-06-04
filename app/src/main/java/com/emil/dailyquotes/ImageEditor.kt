@@ -23,10 +23,12 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -39,6 +41,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
@@ -62,6 +65,7 @@ import com.emil.dailyquotes.room.Quote
 fun ImageEditor(
     modifier: Modifier = Modifier,
     context: Context,
+    firebaseManager: FirebaseManager,
     quote: Quote,
     isFullscreen: Boolean = true,
     optionsVisible: Boolean = true,
@@ -78,6 +82,7 @@ fun ImageEditor(
     var size by remember { mutableFloatStateOf(1f) }
     var alpha by remember { mutableFloatStateOf(1f) }
     var colorIntensity by remember { mutableFloatStateOf(1f) }
+    var showProfile by remember { mutableStateOf(false) }
 
     val brush = Brush.linearGradient(colors = listOf(Color.Red, Color.Magenta, Color.Blue))
 
@@ -99,7 +104,9 @@ fun ImageEditor(
     }
 
     Column(
-        modifier = paddingModifier.padding(horizontal = 24.dp).padding(bottom = 8.dp),
+        modifier = paddingModifier
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (isFullscreen) {
@@ -131,7 +138,9 @@ fun ImageEditor(
                     }
                 }
         ) {
-            Box {
+            Box (
+                contentAlignment = Alignment.BottomCenter
+            ){
                 androidx.compose.foundation.Canvas(
                     modifier = Modifier.fillMaxSize(),
                     onDraw = {
@@ -148,7 +157,9 @@ fun ImageEditor(
                             .padding(padding.dp)
                             .padding(vertical = containerHeight.dp),
                         quote = quote,
-                        textStyle = MaterialTheme.typography.headlineSmall
+                        textStyle = MaterialTheme.typography.headlineSmall,
+                        firebaseManager = firebaseManager,
+                        showProfile = showProfile
                     )
                 }
             }
@@ -161,11 +172,13 @@ fun ImageEditor(
                     size = size,
                     colorIntensity = colorIntensity,
                     alpha = alpha,
+                    showProfile = showProfile,
                     setContainerWidth = { containerWidth = 100f - it },
                     setPadding = { padding = it },
                     setSize = { size = it },
                     setColorIntensity = { colorIntensity = it },
-                    setAlpha = { alpha = it }
+                    setAlpha = { alpha = it },
+                    setShowProfile = { showProfile = it },
                 )
             } else {
                 TextButton(
@@ -245,11 +258,13 @@ fun ImageOptions(
     size: Float,
     colorIntensity: Float,
     alpha: Float,
+    showProfile: Boolean,
     setContainerWidth: (Float) -> Unit,
     setPadding: (Float) -> Unit,
     setSize: (Float) -> Unit,
     setColorIntensity: (Float) -> Unit,
     setAlpha: (Float) -> Unit,
+    setShowProfile: (Boolean) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -284,6 +299,12 @@ fun ImageOptions(
             setValue = setAlpha,
             valueRange = 0f..1f
         )
+        /*
+        CheckOption(label = "Show profile", value = showProfile) {
+            setShowProfile(it)
+        }
+
+         */
     }
 }
 
@@ -301,6 +322,22 @@ private fun OptionSlider(
     ) {
         Text(text = title, style = MaterialTheme.typography.labelMedium)
         Slider(value = value, onValueChange = setValue, valueRange = valueRange)
+    }
+}
+
+@Composable
+private fun CheckOption(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: Boolean,
+    setValue: (Boolean) -> Unit
+){
+    Row(
+        modifier = modifier
+            .toggleable(value, onValueChange = setValue)
+    ){
+        Checkbox(checked = value, onCheckedChange = null)
+        Text(text = label)
     }
 }
 

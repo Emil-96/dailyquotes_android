@@ -8,7 +8,10 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,6 +22,8 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -46,6 +51,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.emil.dailyquotes.room.Quote
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.shimmer
@@ -113,14 +120,16 @@ private fun DailyQuote(
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun QuoteCard(
     modifier: Modifier = Modifier,
     quote: Quote?,
     title: String = "",
-    firebaseManager: FirebaseManager? = null,
+    firebaseManager: FirebaseManager,
     startWithActionRow: Boolean = false,
-    textStyle: TextStyle = MaterialTheme.typography.headlineMedium
+    textStyle: TextStyle = MaterialTheme.typography.headlineMedium,
+    showProfile: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val vibrator = LocalHapticFeedback.current
@@ -152,6 +161,30 @@ fun QuoteCard(
                 .padding(horizontal = 24.dp, vertical = 24.dp),
             //verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            AnimatedVisibility(
+                showProfile,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ){
+                val imageUrl = firebaseManager.getImageUrl().value
+                val name = firebaseManager.getName().value
+                Row (
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ){
+                    GlideImage(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape),
+                        model = imageUrl,
+                        contentDescription = "profile image"
+                    )
+                    Text(
+                        modifier = Modifier.alpha(.8f),
+                        text = "$name's quote for the day"
+                    )
+                }
+            }
             if (title != "") {
                 Text(
                     text = title,

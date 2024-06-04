@@ -247,6 +247,7 @@ class MainActivity : ComponentActivity() {
                     if (showSheet.value == true) {
                         ShareSheet(
                             context = this@MainActivity,
+                            firebaseManager = firebaseManager,
                             quote = sharedQuote,
                         )
                     }
@@ -480,7 +481,12 @@ class MainActivity : ComponentActivity() {
             getNavDestination(
                 this,
                 ROUTE_IMAGE_EDITOR,
-            ) { ImageEditor(quote = sharedQuote, context = this@MainActivity) }
+            ) {
+                ImageEditor(
+                    quote = sharedQuote,
+                    context = this@MainActivity,
+                    firebaseManager = firebaseManager
+                ) }
         }
     }
 
@@ -892,6 +898,7 @@ fun currentRoute(navController: NavController): String {
 @Composable
 fun ShareSheet(
     context: Context,
+    firebaseManager: FirebaseManager,
     quote: Quote,
 ) {
     val scope = rememberCoroutineScope()
@@ -906,6 +913,7 @@ fun ShareSheet(
     ) {
         ImageEditor(
             context = context,
+            firebaseManager = firebaseManager,
             quote = quote,
             isFullscreen = false,
             optionsVisible = false,
