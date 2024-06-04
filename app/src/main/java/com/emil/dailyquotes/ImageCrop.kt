@@ -147,3 +147,8 @@ fun ImageCrop(
         }
     }
 }
+
+/**
+ * An inline function that can be called on any [ImageBitmap] to check if it is zero (width and height = 1)
+ */
+inline val ImageBitmap.isZero: Boolean get() = this.width == 1 && this.height == 1

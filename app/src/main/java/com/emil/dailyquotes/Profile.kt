@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -27,6 +28,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 
 /**
  * Returns the profile page.
@@ -75,15 +79,16 @@ fun ProfilePage(
  * @param modifier A [Modifier] to adjust the content.
  * @param firebaseManager A [FirebaseManager] to retrieve information about the currently signed in user.
  */
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun ProfileView(
     modifier: Modifier = Modifier,
     firebaseManager: FirebaseManager
 ){
 
-    val name = firebaseManager.getName()
-    val email = firebaseManager.getEmail()
-    val profileImage = null
+    val name = firebaseManager.getName().observeAsState()
+    val email = firebaseManager.getEmail().observeAsState()
+    val profileImage = firebaseManager.getImageUrl().observeAsState("")
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -94,19 +99,21 @@ private fun ProfileView(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
+            GlideImage(
                 modifier = Modifier
                     .size(200.dp)
                     .clip(CircleShape)
                     .background(color = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)),
-                painter = painterResource(
-                    id = R.drawable.ic_person
-                ),
+                model = profileImage.value,
+                loading = placeholder(R.drawable.ic_person),
+                failure = placeholder(R.drawable.ic_person),
                 contentDescription = "profile image",
-                colorFilter = if(profileImage == null) ColorFilter.tint(MaterialTheme.colorScheme.onBackground.copy(alpha = .5f)) else null,
+                colorFilter = if(profileImage.value.isEmpty()) ColorFilter.tint(MaterialTheme.colorScheme.onBackground.copy(alpha = .5f)) else null,
             )
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 72.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 72.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 LabelText(label = "Name")

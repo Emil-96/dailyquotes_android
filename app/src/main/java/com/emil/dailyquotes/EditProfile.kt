@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +47,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +65,7 @@ fun EditProfile(
     }
     var showDialog by remember { mutableStateOf(false) }
 
-    val originalName = firebaseManager.getName().value
+    val originalName = "" + firebaseManager.getName().value
     var name by remember {
         mutableStateOf("" + firebaseManager.getName().value)
     }
@@ -80,6 +84,8 @@ fun EditProfile(
         }
     }
 
+    val imageUrl = firebaseManager.getImageUrl().observeAsState("")
+
     if (showDialog) {
         Dialog(
             dialogOptions = dialogOptions,
@@ -90,7 +96,7 @@ fun EditProfile(
     }
 
     var croppedImage: ImageBitmap by remember {
-        mutableStateOf(ImageBitmap(1,1))
+        mutableStateOf(ImageBitmap(1, 1))
     }
 
     var selectedImage: ImageBitmap? by remember {
@@ -123,15 +129,12 @@ fun EditProfile(
                         exit = fadeOut(animationSpec = tween(duration))
                     ) {
                         TextButton(onClick = {
-                            firebaseManager.changeName(
-                                name = name,
-                                onSuccess = { mainActivity?.back() },
-                                onFailure = {
-                                    mainActivity?.showMessage(
-                                        "Failed to update profile",
-                                        isError = true
-                                    )
-                                })
+                            saveProfile(
+                                firebaseManager = firebaseManager,
+                                originalName = originalName,
+                                newName = name,
+                                newImage = selectedImage
+                            )
                         }) {
                             Text(text = "Save")
                         }
@@ -145,7 +148,10 @@ fun EditProfile(
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp)
         ) {
-            AnimatedContent(targetState = selectedImageUri, label = "show and hide cropping ui") { cropping ->
+            AnimatedContent(
+                targetState = selectedImageUri,
+                label = "show and hide cropping ui"
+            ) { cropping ->
                 if (cropping?.path?.isNotBlank() == true) {
                     ImageCrop(
                         image = cropping,
@@ -160,12 +166,13 @@ fun EditProfile(
                 } else {
                     EditFields(
                         profileImage = selectedImage,
+                        imageUrl = imageUrl.value,
                         name = name,
                         setName = { name = it }
                     )
                 }
             }
-            // This is required as otherwise the recording of the cropped image doesn't work (I don't know why)
+            /** This is required as otherwise the recording of the cropped image doesn't work (I don't know why) */
             ImagePreview(
                 modifier = Modifier
                     .alpha(0f)
@@ -174,6 +181,70 @@ fun EditProfile(
             )
         }
     }
+}
+
+private fun saveProfile(
+    firebaseManager: FirebaseManager,
+    originalName: String,
+    newName: String,
+    newImage: ImageBitmap?
+) {
+    updateName(
+        firebaseManager = firebaseManager,
+        originalName = originalName,
+        newName = newName,
+        onSuccess = {
+            updateImage(
+                firebaseManager = firebaseManager,
+                newImage = newImage,
+                onSuccess = { mainActivity?.back() },
+                onFailure = { updateFailed() }
+            )
+        },
+        onFailure = { updateFailed() }
+    )
+}
+
+private fun updateName(
+    firebaseManager: FirebaseManager,
+    originalName: String,
+    newName: String,
+    onSuccess: () -> Unit,
+    onFailure: () -> Unit
+) {
+    if (originalName != newName) {
+        firebaseManager.changeName(
+            name = newName,
+            onSuccess = onSuccess,
+            onFailure = onFailure
+        )
+    } else {
+        onSuccess()
+    }
+}
+
+private fun updateImage(
+    firebaseManager: FirebaseManager,
+    newImage: ImageBitmap?,
+    onSuccess: () -> Unit,
+    onFailure: () -> Unit
+) {
+    if (newImage != null && !newImage.isZero) {
+        firebaseManager.changeProfileImage(
+            image = newImage,
+            onSuccess = onSuccess,
+            onFailure = onFailure
+        )
+    } else {
+        onSuccess()
+    }
+}
+
+private fun updateFailed() {
+    mainActivity?.showMessage(
+        "Failed to update profile completely",
+        true
+    )
 }
 
 @Composable
@@ -192,12 +263,14 @@ private fun ImagePreview(
 @Composable
 private fun EditFields(
     profileImage: ImageBitmap?,
+    imageUrl: String,
     name: String,
     setName: (String) -> Unit
 ) {
     Column {
         EditImage(
             profileImage = profileImage,
+            imageUrl = imageUrl
         )
         TextField(
             modifier = Modifier.padding(top = 24.dp),
@@ -209,9 +282,11 @@ private fun EditFields(
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 private fun EditImage(
     profileImage: ImageBitmap?,
+    imageUrl: String
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -224,16 +299,17 @@ private fun EditImage(
                 .clip(CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            if (profileImage == null) {
-                Image(
+            if (profileImage == null || profileImage.isZero) {
+                GlideImage(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(color = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)),
-                    painter = painterResource(
-                        id = R.drawable.ic_person
-                    ),
-                    contentDescription = "profile image placeholder",
-                    colorFilter = ColorFilter.tint(
+                    model = imageUrl,
+                    contentDescription = "profile image",
+                    loading = placeholder(R.drawable.ic_person),
+                    failure = placeholder(R.drawable.ic_person),
+                    colorFilter = if(imageUrl.isNotEmpty()) null else
+                        ColorFilter.tint(
                         MaterialTheme.colorScheme.onBackground.copy(
                             alpha = .5f
                         )

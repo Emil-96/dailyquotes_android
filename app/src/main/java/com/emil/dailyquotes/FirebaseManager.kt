@@ -1,7 +1,10 @@
 package com.emil.dailyquotes
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.LiveData
@@ -16,7 +19,9 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.LocalDate
 import kotlin.random.Random
 
@@ -36,13 +41,16 @@ class FirebaseManager(
 ) {
     private val auth = Firebase.auth
     private val db = Firebase.firestore
+    private val storage = Firebase.storage.reference
 
     private var _name: MutableLiveData<String> = MutableLiveData("")
     private var _email: MutableLiveData<String> = MutableLiveData("")
     private var _favorites: MutableLiveData<List<Quote>> = MutableLiveData(listOf())
+    private var _imageUrl: MutableLiveData<String> = MutableLiveData()
     private val name: LiveData<String> = _name
     private val email: LiveData<String> = _email
     val favorites: LiveData<List<Quote>> = _favorites
+    private val imageUrl: LiveData<String> = _imageUrl
 
     private var isAdmin = false
 
@@ -118,11 +126,12 @@ class FirebaseManager(
 
                     val name = snapshot.get("name").toString()
                     val email = auth.currentUser?.email
+                    val imageUrl = snapshot.get("imageUrl").toString()
 
-                    snapshot.get("favorites")?.let{ favorites ->
+                    snapshot.get("favorites")?.let { favorites ->
                         with(favorites as ArrayList<String>) {
                             for (favorite in favorites) {
-                                mainActivity?.lifecycleScope?.launch{
+                                mainActivity?.lifecycleScope?.launch {
                                     val quote = quoteDao.getQuoteById(favorite)
                                     quote.isFavorite = true
                                     quoteDao.update(quote)
@@ -136,6 +145,7 @@ class FirebaseManager(
                         saveUserInfo(name, email ?: "")
                     }
                     _name.postValue(name)
+                    _imageUrl.postValue(imageUrl)
 
                     isAdmin = (snapshot.get("admin") ?: false) as Boolean
                 }
@@ -175,6 +185,10 @@ class FirebaseManager(
      */
     fun isAdmin(): Boolean {
         return isAdmin
+    }
+
+    fun getImageUrl(): LiveData<String> {
+        return imageUrl
     }
 
     /**
@@ -364,9 +378,9 @@ class FirebaseManager(
     /**
      * Loads the quote that has been saved to the local storage as the quote of the day.
      */
-    fun loadDailyQuote(
+    private fun loadDailyQuote(
         preferenceManager: PreferenceManager
-    ){
+    ) {
         Log.d("PreferenceManager", "loading random quote")
         mainActivity?.lifecycleScope?.launch {
             mainActivity?.dataStore?.data?.collect { preferences ->
@@ -393,7 +407,7 @@ class FirebaseManager(
      *
      * @param getQuote The code that takes in a [Quote] element and processes it once a random quote is selected.
      */
-    fun getRandomQuote(getQuote: (Quote) -> Unit) {
+    private fun getRandomQuote(getQuote: (Quote) -> Unit) {
 
         if (localDatabaseSize != 0) {
             log("retrieving random quote from local db")
@@ -476,10 +490,10 @@ class FirebaseManager(
         }
     }
 
-    fun changeName(name: String, onSuccess: () -> Unit, onFailure: () -> Unit){
+    fun changeName(name: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
         log("changing name from ${this.name.value} to $name")
 
-        getCurrentUser()?.let {  user ->
+        getCurrentUser()?.let { user ->
             db.collection("users").document(user.uid)
                 .update("name", name)
                 .addOnSuccessListener {
@@ -494,8 +508,64 @@ class FirebaseManager(
         }
     }
 
-    suspend fun getFavorites(){
+    fun changeImageUrl(imageUrl: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        log("changing imageUrl from ${this.imageUrl.value} to $imageUrl")
+
+        getCurrentUser()?.let { user ->
+            db.collection("users").document(user.uid)
+                .update("imageUrl", imageUrl)
+                .addOnSuccessListener {
+                    _imageUrl.postValue(imageUrl)
+                    log("successfully changed imageUrl")
+                    onSuccess()
+                }
+                .addOnFailureListener {
+                    log("failed to change imageUrl")
+                    onFailure()
+                }
+        }
+    }
+
+    suspend fun getFavorites() {
         _favorites.postValue(quoteDao.getFavorites())
+    }
+
+    fun changeProfileImage(image: ImageBitmap, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        val fileRef = storage.child("profile_images/${auth.uid}.png")
+
+        log("uploading profile picture")
+
+        getUriForBitmap(
+            context = context,
+            bitmap = image.asAndroidBitmap()
+        )?.let {
+            fileRef.putFile(it)
+                .continueWithTask { task ->
+                    if (!task.isSuccessful) {
+                        task.exception?.let { e ->
+                            throw e
+                        }
+                    }
+                    fileRef.downloadUrl
+                }
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        log("successfully uploaded profile picture")
+                        changeImageUrl(
+                            imageUrl = task.result.toString(),
+                            onSuccess = onSuccess,
+                            onFailure = onFailure
+                        )
+                    } else {
+                        log("failed to upload profile picture")
+                        onFailure()
+                    }
+                }
+        }
+    }
+
+    fun removeProfileImage() {
+        // TODO
     }
 }
 
