@@ -14,7 +14,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,7 +32,7 @@ fun getNavigationDestinations(
     preferenceManager: PreferenceManager,
     orientation: Int
 ): List<NavigationDestination> {
-    return if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+    return if (orientation == Configuration.ORIENTATION_PORTRAIT || !firebaseManager.isSignedIn()) {
         listOf(
             NavigationDestination(
                 navItem = BottomNavigationItem.HomeScreenItem,
