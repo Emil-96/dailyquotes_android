@@ -212,7 +212,8 @@ class FirebaseManager(
         auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener {
             auth.uid?.let { userId ->
                 val userMap = hashMapOf(
-                    "name" to name
+                    "name" to name,
+                    "imageUrl" to ""
                 )
                 db
                     .collection("users")
