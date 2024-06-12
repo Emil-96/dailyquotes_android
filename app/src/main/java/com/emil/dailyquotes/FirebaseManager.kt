@@ -1,7 +1,6 @@
 package com.emil.dailyquotes
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -21,7 +20,6 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.launch
-import java.io.File
 import java.time.LocalDate
 import kotlin.random.Random
 
@@ -443,9 +441,9 @@ class FirebaseManager(
      */
     private fun getRandomQuoteFromLocalDatabase(getQuote: (Quote) -> Unit) {
         mainActivity?.lifecycleScope?.launch {
-            quoteDao?.getAll().also {
+            quoteDao.getAll().also {
                 //log("getAll() returns $it")
-                it?.let { quotes ->
+                it.let { quotes ->
                     val randomIndex = Random.nextInt(quotes.size)
                     getQuote(quotes[randomIndex])
                     log("retrieved '${quotes[randomIndex].quote}'")
