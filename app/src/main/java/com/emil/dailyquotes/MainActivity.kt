@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.BackEventCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -621,6 +622,7 @@ class MainActivity : ComponentActivity() {
         isError: Boolean = false
     ) {
         // TODO: Show a toast to the user with the error message.
+        Toast.makeText(this, message, if(isError) Toast.LENGTH_SHORT else Toast.LENGTH_LONG).show()
     }
 
     fun share(quote: Quote) {
