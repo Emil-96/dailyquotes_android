@@ -1,6 +1,6 @@
 # Privacy Policy
 
-This is the privacy policy for the Daily Quotes app.
+This is the privacy policy for the DailyQuotes app.
 
 ## Table of contents
 
