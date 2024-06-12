@@ -126,7 +126,8 @@ class FirebaseManager(
 
                     val name = snapshot.get("name").toString()
                     val email = auth.currentUser?.email
-                    val imageUrl = snapshot.get("imageUrl").toString()
+                    var imageUrl = snapshot.get("imageUrl").toString()
+                    if(imageUrl == "null") imageUrl = ""
 
                     snapshot.get("favorites")?.let { favorites ->
                         with(favorites as ArrayList<String>) {
