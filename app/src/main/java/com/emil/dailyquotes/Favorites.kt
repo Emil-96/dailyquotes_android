@@ -2,14 +2,15 @@ package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,15 +22,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -47,7 +44,6 @@ fun FavoritePager(
 ) {
     val scope = rememberCoroutineScope()
 
-    val emptyQuoteList: List<Quote> = listOf()
     val favorites = firebaseManager.favorites.observeAsState(initial = listOf())
 
     scope.launch {
@@ -63,18 +59,20 @@ fun FavoritePager(
         ) {
             Text(text = "Favorites")
             Spacer(modifier = Modifier.weight(1f))
-            TextButton(onClick = {
-                mainActivity?.navigateTo(ROUTE_FAVORITES)
-            }) {
-                Row(
-                    modifier = Modifier.padding(start = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "See all")
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_forward),
-                        contentDescription = ""
-                    )
+            if(favorites.value.isNotEmpty()) {
+                TextButton(onClick = {
+                    mainActivity?.navigateTo(ROUTE_FAVORITES)
+                }) {
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "See all")
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_forward),
+                            contentDescription = ""
+                        )
+                    }
                 }
             }
         }
@@ -90,7 +88,7 @@ private fun FavPager(
     list: List<Quote>,
     firebaseManager: FirebaseManager
 ){
-    val pagerState = rememberPagerState(pageCount = { list.size })
+    val pagerState = rememberPagerState(pageCount = { list.size.coerceAtLeast(1) })
 
     HorizontalPager(
         modifier = Modifier
@@ -115,6 +113,18 @@ private fun FavPager(
                 quote = list[list.lastIndex - page],
                 firebaseManager = firebaseManager
             )
+        }else{
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .alpha(.5f),
+                    text = "Starred quotes will appear here"
+                )
+            }
         }
     }
 }
@@ -130,7 +140,6 @@ fun FavoritePage(
 
     val screenWidth = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp }
 
-    val emptyQuoteList: List<Quote> = listOf()
     val favorites = firebaseManager.favorites.observeAsState(initial = listOf())
 
     scope.launch {
@@ -150,7 +159,7 @@ fun FavoritePage(
                     QuoteCard(
                         quote = favorites.value[favorites.value.lastIndex - index],
                         firebaseManager = firebaseManager,
-                        startWithActionRow = true
+                        startWithActionRow = false
                     )
                 }
             }
