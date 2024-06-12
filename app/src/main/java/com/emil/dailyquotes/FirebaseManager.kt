@@ -263,7 +263,16 @@ class FirebaseManager(
         mainActivity?.lifecycleScope?.launch {
             saveUserInfo("", "")
             isAdmin = false
+            removeLocalUserData()
             onSuccess()
+        }
+    }
+
+    private suspend fun removeLocalUserData(){
+        val favorites = database.quoteDao().getFavorites()
+        for(favorite in favorites){
+            favorite.isFavorite = false
+            database.quoteDao().update(favorite)
         }
     }
 
