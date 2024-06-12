@@ -1,6 +1,6 @@
 # Account Deletion
 
-These are the instruction on how to request your account and its associated information to be deleted.
+These are the instruction on how to request your DailyQuotes account and its associated information to be deleted.
 
 ## How to request deletion
 
