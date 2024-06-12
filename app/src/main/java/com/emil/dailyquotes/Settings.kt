@@ -1,6 +1,9 @@
 package com.emil.dailyquotes
 
+import android.content.Intent
+import android.net.Uri
 import android.util.Log
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -29,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -100,6 +105,16 @@ fun SettingsPage(
                     }
                 )
             }
+            Setting(
+                title = "View on GitHub",
+                description = "View the source code for this application",
+                hasSwitch = false,
+                icon = R.drawable.ic_forward,
+                onCheckedChange = {
+                    val intent = Intent(Intent.ACTION_VIEW)
+                    intent.data = Uri.parse("https://github.com/Emil-96/dailyquotes_android")
+                    mainActivity?.startActivity(intent)
+                })
         }
 
     }
@@ -125,6 +140,7 @@ fun LoginView(
  *
  * @param modifier A [Modifier] to adjust the content.
  * @param title The short big text indicating what the setting is about or where it leads.
+ * @param icon The icon that will be displayed. Only gets applied when [hasSwitch] is false.
  * @param description A smaller, more detailed text below the title.
  * @param isChecked The state of the switch.
  * @param onCheckedChange The method to be executed when the state of the switch changes.
@@ -134,6 +150,7 @@ fun LoginView(
 private fun Setting(
     modifier: Modifier = Modifier,
     title: String,
+    @DrawableRes icon: Int = 0,
     description: String? = null,
     isChecked: LiveData<Boolean> = MutableLiveData(false),
     onCheckedChange: (Boolean) -> Unit,
@@ -162,6 +179,8 @@ private fun Setting(
                     onCheckedChange = {
                         onCheckedChange(!checked)
                     })
+            }else if(icon != 0){
+                Icon(painter = painterResource(id = icon), contentDescription = "")
             }
         }
     }
