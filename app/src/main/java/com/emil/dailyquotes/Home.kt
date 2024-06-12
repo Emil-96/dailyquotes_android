@@ -208,21 +208,19 @@ fun QuoteCard(
                     .defaultMinSize(minHeight = if (showPlaceholder) 86.dp else 0.dp)
                     .fillMaxWidth()
             )
-            firebaseManager?.let {
-                AnimatedVisibility(
-                    visible = showActionRow && !showPlaceholder,
-                    enter = slideInVertically(
-                        initialOffsetY = { -it },
-                        animationSpec = tween(durationMillis = transitionDurationMillis)
-                    ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
-                ) {
-                    quote?.let {
-                        ActionRow(
-                            modifier = Modifier.padding(top = 16.dp),
-                            firebaseManager = firebaseManager,
-                            quote = it
-                        )
-                    }
+            AnimatedVisibility(
+                visible = showActionRow && !showPlaceholder,
+                enter = slideInVertically(
+                    initialOffsetY = { -it },
+                    animationSpec = tween(durationMillis = transitionDurationMillis)
+                ) + fadeIn(animationSpec = tween(durationMillis = transitionDurationMillis))
+            ) {
+                quote?.let {
+                    ActionRow(
+                        modifier = Modifier.padding(top = 16.dp),
+                        firebaseManager = firebaseManager,
+                        quote = it
+                    )
                 }
             }
         }
