@@ -10,6 +10,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,11 +22,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -168,7 +171,8 @@ fun EditProfile(
                         profileImage = selectedImage,
                         imageUrl = imageUrl.value,
                         name = name,
-                        setName = { name = it }
+                        setName = { name = it },
+                        removeImage = { selectedImage = ImageBitmap(1, 1) }
                     )
                 }
             }
@@ -229,12 +233,19 @@ private fun updateImage(
     onSuccess: () -> Unit,
     onFailure: () -> Unit
 ) {
-    if (newImage != null && !newImage.isZero) {
-        firebaseManager.changeProfileImage(
-            image = newImage,
-            onSuccess = onSuccess,
-            onFailure = onFailure
-        )
+    if (newImage != null) {
+        if(newImage.isZero){
+            firebaseManager.removeProfileImage(
+                onSuccess = onSuccess,
+                onFailure = onFailure
+            )
+        }else {
+            firebaseManager.changeProfileImage(
+                image = newImage,
+                onSuccess = onSuccess,
+                onFailure = onFailure
+            )
+        }
     } else {
         onSuccess()
     }
@@ -265,12 +276,14 @@ private fun EditFields(
     profileImage: ImageBitmap?,
     imageUrl: String,
     name: String,
-    setName: (String) -> Unit
+    setName: (String) -> Unit,
+    removeImage: () -> Unit,
 ) {
     Column {
         EditImage(
             profileImage = profileImage,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            removeImage = removeImage
         )
         TextField(
             modifier = Modifier.padding(top = 24.dp),
@@ -286,8 +299,12 @@ private fun EditFields(
 @Composable
 private fun EditImage(
     profileImage: ImageBitmap?,
-    imageUrl: String
+    imageUrl: String,
+    removeImage: () -> Unit,
 ) {
+    Log.d("EditImage", "imageUrl: $imageUrl - profileImage: ${profileImage?.width}*${profileImage?.height}")
+    val hideImage = profileImage?.isZero == true
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -304,11 +321,11 @@ private fun EditImage(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(color = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)),
-                    model = imageUrl,
+                    model = if(hideImage) R.drawable.ic_person else imageUrl,
                     contentDescription = "profile image",
                     loading = placeholder(R.drawable.ic_person),
                     failure = placeholder(R.drawable.ic_person),
-                    colorFilter = if(imageUrl.isNotEmpty()) null else
+                    colorFilter = if(imageUrl.isNotEmpty() && !hideImage) null else
                         ColorFilter.tint(
                         MaterialTheme.colorScheme.onBackground.copy(
                             alpha = .5f
@@ -329,6 +346,22 @@ private fun EditImage(
             Log.d("Edit", "Clicked photo pick, selecting image...")
         }) {
             Text(text = "Select new image")
+        }
+        if(imageUrl.isNotEmpty()){
+            OutlinedButton(
+                colors = ButtonDefaults.outlinedButtonColors().copy(
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.onErrorContainer
+                ),
+                onClick = {
+                    removeImage()
+                }
+            ) {
+                Text(text = "Remove image")
+            }
         }
     }
 }

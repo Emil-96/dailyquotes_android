@@ -508,7 +508,7 @@ class FirebaseManager(
         }
     }
 
-    fun changeImageUrl(imageUrl: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
+    private fun changeImageUrl(imageUrl: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
         log("changing imageUrl from ${this.imageUrl.value} to $imageUrl")
 
         getCurrentUser()?.let { user ->
@@ -564,8 +564,8 @@ class FirebaseManager(
         }
     }
 
-    fun removeProfileImage() {
-        // TODO
+    fun removeProfileImage(onSuccess: () -> Unit, onFailure: () -> Unit) {
+        changeImageUrl(imageUrl = "", onSuccess = onSuccess, onFailure = onFailure)
     }
 }
 
