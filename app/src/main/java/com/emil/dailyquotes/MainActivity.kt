@@ -583,7 +583,9 @@ class MainActivity : ComponentActivity() {
     }
 
     fun backTo(route: String) {
-        pageNavController.popBackStack(route, inclusive = false)
+        if(!pageNavController.popBackStack(route, inclusive = false) && currentPage != route){
+            pageNavController.popBackStack(ROUTE_HOME, inclusive = false)
+        }
     }
 
     /*
