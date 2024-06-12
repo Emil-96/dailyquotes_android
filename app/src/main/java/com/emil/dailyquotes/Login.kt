@@ -116,6 +116,10 @@ fun LoginPage(
                     password = password,
                     onSuccess = {
                         mainActivity?.backTo(ROUTE_SETTINGS) },
+                    onFailure = {
+                        mainActivity?.showMessage("Failed to log in", isError = true)
+                        mainActivity?.backTo(ROUTE_LOGIN)
+                    }
                 )
             } else {
                 firebaseManager.register(
@@ -125,6 +129,10 @@ fun LoginPage(
                     onSuccess = {
                         mainActivity?.backTo(ROUTE_SETTINGS)
                         registerPassword(context, email, password)
+                    },
+                    onFailure = {
+                        mainActivity?.showMessage("Failed to register", isError = true)
+                        mainActivity?.backTo(ROUTE_LOGIN)
                     }
                 )
             }
