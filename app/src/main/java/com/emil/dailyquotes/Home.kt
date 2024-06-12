@@ -1,7 +1,6 @@
 package com.emil.dailyquotes
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.content.res.Configuration
 import android.icu.util.Calendar
 import androidx.compose.animation.AnimatedContent
@@ -271,8 +270,10 @@ private fun FavoriteButton(
         mutableStateOf(false)
     }
 
+    val isChecked = isFavorite && firebaseManager.isSignedIn()
+
     FilledIconToggleButton(
-        checked = isFavorite,
+        checked = isChecked,
         onCheckedChange = { checked ->
             if (!firebaseManager.isSignedIn()) {
                 mainActivity?.navigateTo(ROUTE_LOGIN)
@@ -312,7 +313,7 @@ private fun FavoriteButton(
         AnimatedContent(targetState = isLoading, label = "") { loading ->
             if (!loading) {
                 Icon(
-                    painter = painterResource(id = if (isFavorite) R.drawable.ic_star_filled else R.drawable.ic_star),
+                    painter = painterResource(id = if (isChecked) R.drawable.ic_star_filled else R.drawable.ic_star),
                     contentDescription = "mark as favorite"
                 )
             } else {
