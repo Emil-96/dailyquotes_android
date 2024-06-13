@@ -2,6 +2,8 @@
 
 This is the Android frontend for the DailyQuotes app.
 
+This app was developed in parallel with a web version, which you can find [here](https://github.com/JanWilfert/DailyQuotesWebApp/).
+
 ## Building your own app
 
 I recommend copying the repo and opening it with [Android Studio](https://developer.android.com/studio).
