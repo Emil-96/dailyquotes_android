@@ -101,3 +101,7 @@ fun emptyQuote(): Quote{
         false
     )
 }
+
+fun cleanQuotationMarks(string: String): String{
+    return string.replace(oldValue = "\"\"", newValue = "\"")
+}
