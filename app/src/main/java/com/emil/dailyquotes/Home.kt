@@ -22,8 +22,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledIconToggleButton
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.emil.dailyquotes.room.Quote
+import com.emil.dailyquotes.room.cleanQuotationMarks
 import com.google.accompanist.placeholder.PlaceholderHighlight
 import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.placeholder.placeholder
@@ -70,9 +73,16 @@ fun HomeScreen(
     preferenceManager: PreferenceManager
 ) {
     val orientation = LocalConfiguration.current.orientation
+
+    var columnModifier = modifier.fillMaxSize()
+
+    if(orientation == Configuration.ORIENTATION_PORTRAIT) {
+        val scrollState = rememberScrollState()
+        columnModifier = columnModifier.verticalScroll(scrollState)
+    }
+
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = columnModifier
     ) {
         DailyQuote(firebaseManager = firebaseManager, preferenceManager = preferenceManager)
         if (orientation == Configuration.ORIENTATION_PORTRAIT && firebaseManager.isSignedIn()) {
@@ -194,7 +204,7 @@ fun QuoteCard(
                 )
             }
             Text(
-                text = "" + quote?.quote,
+                text = cleanQuotationMarks("" + quote?.quote),
                 style = textStyle,
                 fontStyle = FontStyle.Italic,
                 modifier = Modifier
