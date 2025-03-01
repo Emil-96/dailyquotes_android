@@ -11,15 +11,15 @@ I recommend copying the repo and opening it with [Android Studio](https://develo
 If that is not possible you can use the command line to build the app. For that, copy the repo and open the root directory in the terminal.
 Run the following command.
 
-On Windows:
-
-	gradlew.bat assembleDebug
-
 On Linux:
 
-	./gradlew assembleDebug
+	./gradlew assembleRelease
 
-The .apk file will be found under `app/build/outputs/apk/app-debug.apk` and can be installed on any Android device.
+On Windows:
+
+	gradlew.bat assembleRelease
+
+The .apk file will be found under `app/build/outputs/apk/release/app-debug-unsigned.apk` and can be installed on any Android device.
 
 ## Documentation
 
@@ -30,4 +30,5 @@ Composable functions in [Jetpack Compose](https://developer.android.com/jetpack/
 
 ## Current State
 
-The app is currently under development and is not ready to be used.
+The app has been finished in the context of the university course, but might contain issues.
+If you encounter any issues, please [contact me](mailto:emil.ca.carls+github@gmail.com).
